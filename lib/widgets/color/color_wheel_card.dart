@@ -52,6 +52,7 @@ class ColorWheelCard extends StatelessWidget {
                 green: values.green,
                 blue: values.blue,
                 size: 180,
+                isGain: isGain,
                 onChanged: (r, g, b) {
                   onChanged(values.copyWith(red: r, green: g, blue: b));
                 },

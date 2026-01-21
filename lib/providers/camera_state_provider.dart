@@ -662,6 +662,73 @@ class CameraStateProvider extends ChangeNotifier {
     });
   }
 
+  /// Set clean feed enabled for current display
+  void setCleanFeedEnabled(bool enabled) {
+    final displayName = _state.monitoring.selectedDisplay;
+    if (displayName == null) return;
+
+    final currentDisplay = _state.monitoring.displays[displayName];
+    if (currentDisplay == null) return;
+
+    final updatedDisplay = currentDisplay.copyWith(cleanFeedEnabled: enabled);
+    _state = _state.copyWith(
+      monitoring: _state.monitoring.updateDisplay(displayName, updatedDisplay),
+    );
+    notifyListeners();
+
+    _cameraService?.setCleanFeedEnabled(displayName, enabled).catchError((e) {
+      _error = 'Failed to set clean feed: $e';
+      notifyListeners();
+    });
+  }
+
+  /// Set display LUT enabled for current display
+  void setDisplayLutEnabled(bool enabled) {
+    final displayName = _state.monitoring.selectedDisplay;
+    if (displayName == null) return;
+
+    final currentDisplay = _state.monitoring.displays[displayName];
+    if (currentDisplay == null) return;
+
+    final updatedDisplay = currentDisplay.copyWith(displayLutEnabled: enabled);
+    _state = _state.copyWith(
+      monitoring: _state.monitoring.updateDisplay(displayName, updatedDisplay),
+    );
+    notifyListeners();
+
+    _cameraService?.setDisplayLutEnabled(displayName, enabled).catchError((e) {
+      _error = 'Failed to set display LUT: $e';
+      notifyListeners();
+    });
+  }
+
+  /// Set program feed display enabled (camera-wide)
+  void setProgramFeedEnabled(bool enabled) {
+    _state = _state.copyWith(
+      monitoring: _state.monitoring.copyWith(programFeedEnabled: enabled),
+    );
+    notifyListeners();
+
+    _cameraService?.setProgramFeedEnabled(enabled).catchError((e) {
+      _error = 'Failed to set program feed: $e';
+      notifyListeners();
+    });
+  }
+
+  /// Set video format (camera-wide)
+  void setVideoFormat(String name, String frameRate) {
+    final displayString = '$name $frameRate';
+    _state = _state.copyWith(
+      monitoring: _state.monitoring.copyWith(currentVideoFormat: displayString),
+    );
+    notifyListeners();
+
+    _cameraService?.setVideoFormat(name, frameRate).catchError((e) {
+      _error = 'Failed to set video format: $e';
+      notifyListeners();
+    });
+  }
+
   // ========== COLOR CORRECTION CONTROLS ==========
 
   /// Fetch fresh color correction state

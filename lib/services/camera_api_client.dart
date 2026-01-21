@@ -279,9 +279,42 @@ class CameraApiClient {
 
   /// Get available displays
   Future<List<String>> getAvailableDisplays() async {
-    final data = await _get(ApiEndpoints.monitoringDisplays);
-    final displays = data['displays'] as List<dynamic>? ?? [];
-    return displays.cast<String>();
+    final response = await _httpClient
+        .get(Uri.parse('$_baseUrl${ApiEndpoints.monitoringDisplays}'))
+        .timeout(Durations.connectionTimeout);
+
+    if (response.statusCode == 200) {
+      final body = response.body;
+      final decoded = jsonDecode(body);
+
+      // Handle different possible response formats:
+      // 1. Direct array: ["HDMI", "LCD"]
+      if (decoded is List) {
+        return decoded.cast<String>();
+      }
+
+      // 2. Object with 'displays' key: {"displays": ["HDMI", "LCD"]}
+      if (decoded is Map<String, dynamic>) {
+        if (decoded.containsKey('displays')) {
+          final displays = decoded['displays'] as List<dynamic>? ?? [];
+          return displays.cast<String>();
+        }
+        // 3. Object with display names as keys: {"HDMI": {...}, "LCD": {...}}
+        // Filter out non-display keys if present
+        final displayNames = decoded.keys
+            .where((key) => !key.startsWith('_'))
+            .toList();
+        if (displayNames.isNotEmpty) {
+          return displayNames;
+        }
+      }
+
+      return [];
+    } else if (response.statusCode == 404) {
+      throw FeatureNotSupportedException(ApiEndpoints.monitoringDisplays);
+    } else {
+      throw ApiException('GET ${ApiEndpoints.monitoringDisplays} failed: ${response.statusCode}');
+    }
   }
 
   /// Get focus assist settings for a display
@@ -321,6 +354,52 @@ class CameraApiClient {
     FrameGuidesState state,
   ) async {
     await _put(ApiEndpoints.frameGuides(displayName), state.toJson());
+  }
+
+  /// Get clean feed enabled for a display
+  Future<bool> getCleanFeedEnabled(String displayName) async {
+    final data = await _get(ApiEndpoints.cleanFeed(displayName));
+    return data['cleanFeed'] as bool? ?? false;
+  }
+
+  /// Set clean feed enabled for a display
+  Future<void> setCleanFeedEnabled(String displayName, bool enabled) async {
+    await _put(ApiEndpoints.cleanFeed(displayName), {'cleanFeed': enabled});
+  }
+
+  /// Get display LUT enabled for a display
+  Future<bool> getDisplayLutEnabled(String displayName) async {
+    final data = await _get(ApiEndpoints.displayLut(displayName));
+    return data['enabled'] as bool? ?? false;
+  }
+
+  /// Set display LUT enabled for a display
+  Future<void> setDisplayLutEnabled(String displayName, bool enabled) async {
+    await _put(ApiEndpoints.displayLut(displayName), {'enabled': enabled});
+  }
+
+  /// Get program feed display enabled
+  Future<bool> getProgramFeedEnabled() async {
+    final data = await _get(ApiEndpoints.programFeedDisplay);
+    return data['enabled'] as bool? ?? false;
+  }
+
+  /// Set program feed display enabled
+  Future<void> setProgramFeedEnabled(bool enabled) async {
+    await _put(ApiEndpoints.programFeedDisplay, {'enabled': enabled});
+  }
+
+  /// Get current video format
+  Future<Map<String, dynamic>> getVideoFormat() async {
+    return await _get(ApiEndpoints.videoFormat);
+  }
+
+  /// Set video format
+  Future<void> setVideoFormat(String name, String frameRate) async {
+    await _put(ApiEndpoints.videoFormat, {
+      'name': name,
+      'frameRate': frameRate,
+    });
   }
 
   // ========== COLOR CORRECTION CONTROL ==========

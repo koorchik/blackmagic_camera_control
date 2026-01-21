@@ -192,6 +192,8 @@ class DisplayState {
     this.zebraEnabled = false,
     this.zebraLevel = 100.0,
     this.frameGuides = const FrameGuidesState(),
+    this.cleanFeedEnabled = false,
+    this.displayLutEnabled = false,
   });
 
   /// Display name/identifier
@@ -209,12 +211,20 @@ class DisplayState {
   /// Frame guides state for this display
   final FrameGuidesState frameGuides;
 
+  /// Whether clean feed is enabled (hides overlays)
+  final bool cleanFeedEnabled;
+
+  /// Whether display LUT is enabled
+  final bool displayLutEnabled;
+
   DisplayState copyWith({
     String? name,
     FocusAssistState? focusAssist,
     bool? zebraEnabled,
     double? zebraLevel,
     FrameGuidesState? frameGuides,
+    bool? cleanFeedEnabled,
+    bool? displayLutEnabled,
   }) {
     return DisplayState(
       name: name ?? this.name,
@@ -222,6 +232,8 @@ class DisplayState {
       zebraEnabled: zebraEnabled ?? this.zebraEnabled,
       zebraLevel: zebraLevel ?? this.zebraLevel,
       frameGuides: frameGuides ?? this.frameGuides,
+      cleanFeedEnabled: cleanFeedEnabled ?? this.cleanFeedEnabled,
+      displayLutEnabled: displayLutEnabled ?? this.displayLutEnabled,
     );
   }
 
@@ -236,6 +248,8 @@ class DisplayState {
       frameGuides: json['frameGuides'] != null
           ? FrameGuidesState.fromJson(json['frameGuides'] as Map<String, dynamic>)
           : const FrameGuidesState(),
+      cleanFeedEnabled: json['cleanFeedEnabled'] as bool? ?? false,
+      displayLutEnabled: json['displayLutEnabled'] as bool? ?? false,
     );
   }
 
@@ -247,7 +261,9 @@ class DisplayState {
         other.focusAssist == focusAssist &&
         other.zebraEnabled == zebraEnabled &&
         other.zebraLevel == zebraLevel &&
-        other.frameGuides == frameGuides;
+        other.frameGuides == frameGuides &&
+        other.cleanFeedEnabled == cleanFeedEnabled &&
+        other.displayLutEnabled == displayLutEnabled;
   }
 
   @override
@@ -257,6 +273,8 @@ class DisplayState {
         zebraEnabled,
         zebraLevel,
         frameGuides,
+        cleanFeedEnabled,
+        displayLutEnabled,
       );
 
   @override
@@ -269,6 +287,8 @@ class MonitoringState {
     this.availableDisplays = const [],
     this.selectedDisplay,
     this.displays = const {},
+    this.programFeedEnabled = false,
+    this.currentVideoFormat,
   });
 
   /// List of available display names
@@ -279,6 +299,12 @@ class MonitoringState {
 
   /// Display states by name
   final Map<String, DisplayState> displays;
+
+  /// Whether program return feed is enabled (for ATEM switcher setups)
+  final bool programFeedEnabled;
+
+  /// Current video format (e.g., "4K DCI 23.98p")
+  final String? currentVideoFormat;
 
   /// Get current display state
   DisplayState? get currentDisplay {
@@ -291,6 +317,9 @@ class MonitoringState {
     String? selectedDisplay,
     bool clearSelectedDisplay = false,
     Map<String, DisplayState>? displays,
+    bool? programFeedEnabled,
+    String? currentVideoFormat,
+    bool clearVideoFormat = false,
   }) {
     return MonitoringState(
       availableDisplays: availableDisplays ?? this.availableDisplays,
@@ -298,6 +327,10 @@ class MonitoringState {
           ? null
           : (selectedDisplay ?? this.selectedDisplay),
       displays: displays ?? this.displays,
+      programFeedEnabled: programFeedEnabled ?? this.programFeedEnabled,
+      currentVideoFormat: clearVideoFormat
+          ? null
+          : (currentVideoFormat ?? this.currentVideoFormat),
     );
   }
 
@@ -325,6 +358,8 @@ class MonitoringState {
       availableDisplays: availableDisplays,
       selectedDisplay: json['selectedDisplay'] as String?,
       displays: displays,
+      programFeedEnabled: json['programFeedEnabled'] as bool? ?? false,
+      currentVideoFormat: json['currentVideoFormat'] as String?,
     );
   }
 
@@ -334,7 +369,9 @@ class MonitoringState {
     return other is MonitoringState &&
         listEquals(other.availableDisplays, availableDisplays) &&
         other.selectedDisplay == selectedDisplay &&
-        mapEquals(other.displays, displays);
+        mapEquals(other.displays, displays) &&
+        other.programFeedEnabled == programFeedEnabled &&
+        other.currentVideoFormat == currentVideoFormat;
   }
 
   @override
@@ -342,6 +379,8 @@ class MonitoringState {
         Object.hashAll(availableDisplays),
         selectedDisplay,
         Object.hashAll(displays.entries),
+        programFeedEnabled,
+        currentVideoFormat,
       );
 
   @override

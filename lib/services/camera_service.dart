@@ -273,6 +273,36 @@ class CameraService {
   Future<void> setFrameGuides(String displayName, FrameGuidesState state) =>
       _apiClient.setFrameGuides(displayName, state);
 
+  /// Get clean feed enabled for a display
+  Future<bool> getCleanFeedEnabled(String displayName) =>
+      _apiClient.getCleanFeedEnabled(displayName);
+
+  /// Set clean feed enabled for a display
+  Future<void> setCleanFeedEnabled(String displayName, bool enabled) =>
+      _apiClient.setCleanFeedEnabled(displayName, enabled);
+
+  /// Get display LUT enabled for a display
+  Future<bool> getDisplayLutEnabled(String displayName) =>
+      _apiClient.getDisplayLutEnabled(displayName);
+
+  /// Set display LUT enabled for a display
+  Future<void> setDisplayLutEnabled(String displayName, bool enabled) =>
+      _apiClient.setDisplayLutEnabled(displayName, enabled);
+
+  /// Get program feed display enabled
+  Future<bool> getProgramFeedEnabled() => _apiClient.getProgramFeedEnabled();
+
+  /// Set program feed display enabled
+  Future<void> setProgramFeedEnabled(bool enabled) =>
+      _apiClient.setProgramFeedEnabled(enabled);
+
+  /// Get current video format
+  Future<Map<String, dynamic>> getVideoFormat() => _apiClient.getVideoFormat();
+
+  /// Set video format
+  Future<void> setVideoFormat(String name, String frameRate) =>
+      _apiClient.setVideoFormat(name, frameRate);
+
   /// Fetch initial monitoring state
   Future<MonitoringState> fetchMonitoringState() async {
     final displays = await _safeCall(() => getAvailableDisplays(), <String>[]);
@@ -285,23 +315,50 @@ class CameraService {
         final zebraEnabled = await _safeCall(() => getZebraEnabled(name), false);
         final frameGuides =
             await _safeCall(() => getFrameGuides(name), const FrameGuidesState());
+        final cleanFeedEnabled =
+            await _safeCall(() => getCleanFeedEnabled(name), false);
+        final displayLutEnabled =
+            await _safeCall(() => getDisplayLutEnabled(name), false);
 
         displayStates[name] = DisplayState(
           name: name,
           focusAssist: focusAssist,
           zebraEnabled: zebraEnabled,
           frameGuides: frameGuides,
+          cleanFeedEnabled: cleanFeedEnabled,
+          displayLutEnabled: displayLutEnabled,
         );
       } catch (e) {
         // Display not accessible
       }
     }
 
+    // Fetch camera-wide settings
+    final programFeedEnabled =
+        await _safeCall(() => getProgramFeedEnabled(), false);
+    final videoFormatData =
+        await _safeCall(() => getVideoFormat(), <String, dynamic>{});
+    final currentVideoFormat = _formatVideoFormatString(videoFormatData);
+
     return MonitoringState(
       availableDisplays: displays,
       selectedDisplay: displays.isNotEmpty ? displays.first : null,
       displays: displayStates,
+      programFeedEnabled: programFeedEnabled,
+      currentVideoFormat: currentVideoFormat,
     );
+  }
+
+  /// Format video format data into a display string
+  String? _formatVideoFormatString(Map<String, dynamic> data) {
+    if (data.isEmpty) return null;
+    final name = data['name'] as String?;
+    final frameRate = data['frameRate'] as String?;
+    if (name == null) return null;
+    if (frameRate != null) {
+      return '$name $frameRate';
+    }
+    return name;
   }
 
   // ========== COLOR CORRECTION CONTROL ==========

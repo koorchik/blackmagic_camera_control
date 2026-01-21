@@ -50,13 +50,22 @@ class ApiEndpoints {
       '/control/api/v1/media/devices/$deviceName/doformat';
 
   // Monitoring endpoints
-  static const String monitoringDisplays = '/control/api/v1/monitoring';
+  static const String monitoringDisplays = '/control/api/v1/monitoring/display';
   static String focusAssist(String displayName) =>
       '/control/api/v1/monitoring/$displayName/focusAssist';
   static String zebra(String displayName) =>
       '/control/api/v1/monitoring/$displayName/zebra';
   static String frameGuides(String displayName) =>
       '/control/api/v1/monitoring/$displayName/frameGuide';
+  static String cleanFeed(String displayName) =>
+      '/control/api/v1/monitoring/$displayName/cleanFeed';
+  static String displayLut(String displayName) =>
+      '/control/api/v1/monitoring/$displayName/displayLUT';
+
+  // Camera output endpoints
+  static const String programFeedDisplay =
+      '/control/api/v1/camera/programFeedDisplay';
+  static const String videoFormat = '/control/api/v1/system/videoFormat';
 
   // Color Correction endpoints
   static const String colorLift = '/control/api/v1/colorCorrection/lift';

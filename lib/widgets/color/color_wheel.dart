@@ -10,6 +10,7 @@ class ColorWheel extends StatefulWidget {
     required this.onChanged,
     required this.onChangeEnd,
     this.size = 200,
+    this.isGain = false,
   });
 
   final double red;
@@ -18,6 +19,9 @@ class ColorWheel extends StatefulWidget {
   final void Function(double red, double green, double blue) onChanged;
   final void Function(double red, double green, double blue) onChangeEnd;
   final double size;
+  /// If true, values are in Gain mode (0.0-2.0 range with 1.0 as center).
+  /// If false, values are in Lift/Gamma mode (-1.0 to 1.0 range with 0.0 as center).
+  final bool isGain;
 
   @override
   State<ColorWheel> createState() => _ColorWheelState();
@@ -53,9 +57,28 @@ class _ColorWheelState extends State<ColorWheel> {
     final center = widget.size / 2;
     final radius = center - 10;
 
+    // For Gain mode, offset values so 1.0 becomes center (0)
+    // For Lift/Gamma, 0.0 is already center
+    final offset = widget.isGain ? 1.0 : 0.0;
+    final normalizedRed = _red - offset;
+    final normalizedGreen = _green - offset;
+    final normalizedBlue = _blue - offset;
+
     // Calculate position from RGB values
-    final x = center + (_red - _blue) * radius * 0.5;
-    final y = center - (_green - (_red + _blue) / 2) * radius * 0.5;
+    // dx: red increases right, blue increases left, so dx = (red - blue) / 2
+    // dy: green increases up, the (red+blue)/2 term compensates for slider adjustments
+    var dx = (normalizedRed - normalizedBlue) / 2;
+    var dy = -(normalizedGreen - (normalizedRed + normalizedBlue) / 2);
+
+    // Constrain to circle
+    final distance = math.sqrt(dx * dx + dy * dy);
+    if (distance > 1) {
+      dx = dx / distance;
+      dy = dy / distance;
+    }
+
+    final x = center + dx * radius;
+    final y = center + dy * radius;
 
     return GestureDetector(
       onPanStart: (details) => _handlePan(details.localPosition, center, radius),
@@ -70,8 +93,8 @@ class _ColorWheelState extends State<ColorWheel> {
             children: [
               // Position indicator
               Positioned(
-                left: x.clamp(0, widget.size - 20) - 10,
-                top: y.clamp(0, widget.size - 20) - 10,
+                left: x - 10,
+                top: y - 10,
                 child: Container(
                   width: 20,
                   height: 20,
@@ -105,11 +128,17 @@ class _ColorWheelState extends State<ColorWheel> {
     final clampedDx = distance > 1 ? dx / distance : dx;
     final clampedDy = distance > 1 ? dy / distance : dy;
 
+    // For Gain mode, offset values so center produces 1.0
+    // For Lift/Gamma, center produces 0.0
+    final offset = widget.isGain ? 1.0 : 0.0;
+    final minVal = widget.isGain ? 0.0 : -1.0;
+    final maxVal = widget.isGain ? 2.0 : 1.0;
+
     // Convert to RGB adjustments
     // Simple mapping: x affects red-blue, y affects green
-    _red = (clampedDx * 0.5).clamp(-1.0, 1.0);
-    _blue = (-clampedDx * 0.5).clamp(-1.0, 1.0);
-    _green = (clampedDy * 0.5).clamp(-1.0, 1.0);
+    _red = (clampedDx + offset).clamp(minVal, maxVal);
+    _blue = (-clampedDx + offset).clamp(minVal, maxVal);
+    _green = (clampedDy + offset).clamp(minVal, maxVal);
 
     setState(() {});
     widget.onChanged(_red, _green, _blue);

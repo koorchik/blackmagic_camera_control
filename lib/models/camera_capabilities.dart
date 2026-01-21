@@ -27,6 +27,9 @@ class VideoFormat {
     );
   }
 
+  /// Display string for UI (e.g., "4K DCI 23.98p")
+  String get displayString => '$name $frameRate';
+
   @override
   String toString() => '$name @ $frameRate';
 
