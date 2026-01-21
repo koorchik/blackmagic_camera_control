@@ -30,6 +30,55 @@ class ApiEndpoints {
   static const String system = '/control/api/v1/system';
   static const String systemProduct = '/control/api/v1/system/product';
 
+  // Slate/Metadata endpoints
+  static const String slateNextClip = '/control/api/v1/slates/nextClip';
+
+  // Audio endpoints
+  static String audioChannelLevel(int index) =>
+      '/control/api/v1/audio/channel/$index/level';
+  static String audioChannelInput(int index) =>
+      '/control/api/v1/audio/channel/$index/input';
+  static String audioChannelPhantom(int index) =>
+      '/control/api/v1/audio/channel/$index/phantomPower';
+
+  // Media endpoints
+  static const String mediaWorkingSet = '/control/api/v1/media/workingset';
+  static const String mediaDevices = '/control/api/v1/media/devices';
+  static String mediaDevice(String deviceName) =>
+      '/control/api/v1/media/devices/$deviceName';
+  static String mediaFormat(String deviceName) =>
+      '/control/api/v1/media/devices/$deviceName/doformat';
+
+  // Monitoring endpoints
+  static const String monitoringDisplays = '/control/api/v1/monitoring';
+  static String focusAssist(String displayName) =>
+      '/control/api/v1/monitoring/$displayName/focusAssist';
+  static String zebra(String displayName) =>
+      '/control/api/v1/monitoring/$displayName/zebra';
+  static String frameGuides(String displayName) =>
+      '/control/api/v1/monitoring/$displayName/frameGuide';
+
+  // Color Correction endpoints
+  static const String colorLift = '/control/api/v1/colorCorrection/lift';
+  static const String colorGamma = '/control/api/v1/colorCorrection/gamma';
+  static const String colorGain = '/control/api/v1/colorCorrection/gain';
+  static const String colorSaturation =
+      '/control/api/v1/colorCorrection/saturation';
+  static const String colorContrast =
+      '/control/api/v1/colorCorrection/contrast';
+  static const String colorHue = '/control/api/v1/colorCorrection/hue';
+
+  // Capabilities Discovery endpoints
+  static const String supportedISOs = '/control/api/v1/video/supportedISOs';
+  static const String supportedShutterSpeeds =
+      '/control/api/v1/video/supportedShutterSpeeds';
+  static const String supportedNDFilters =
+      '/control/api/v1/video/supportedNDFilters';
+  static const String supportedVideoFormats =
+      '/control/api/v1/system/supportedVideoFormats';
+  static const String supportedCodecFormats =
+      '/control/api/v1/system/supportedCodecFormats';
+
   // WebSocket endpoint
   static String webSocket(String host, [int port = defaultPort]) =>
       'ws://$host:$port/control/api/v1/event/websocket';
@@ -47,6 +96,7 @@ class Durations {
   Durations._();
 
   static const Duration sliderDebounce = Duration(milliseconds: 50);
+  static const Duration colorCorrectionDebounce = Duration(milliseconds: 100);
   static const Duration connectionTimeout = Duration(seconds: 5);
   static const Duration websocketReconnect = Duration(seconds: 3);
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/video_state.dart';
 import '../../providers/camera_state_provider.dart';
 
 class IsoSelector extends StatelessWidget {
@@ -10,6 +9,7 @@ class IsoSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final cameraState = context.watch<CameraStateProvider>();
     final currentIso = cameraState.video.iso;
+    final supportedISOs = cameraState.capabilities.supportedISOs;
 
     return Card(
       child: Padding(
@@ -38,11 +38,12 @@ class IsoSelector extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: VideoState.commonIsoValues.map((iso) {
+              children: supportedISOs.map((iso) {
                 final isSelected = iso == currentIso;
                 return ChoiceChip(
                   label: Text('$iso'),
                   selected: isSelected,
+                  showCheckmark: false,
                   onSelected: (_) {
                     cameraState.setIso(iso);
                   },

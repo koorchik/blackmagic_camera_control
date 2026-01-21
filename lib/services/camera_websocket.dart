@@ -22,6 +22,12 @@ class CameraWebSocket {
   final _videoController = StreamController<VideoState>.broadcast();
   final _transportController = StreamController<TransportState>.broadcast();
   final _connectionController = StreamController<bool>.broadcast();
+  final _slateController = StreamController<SlateState>.broadcast();
+  final _audioLevelController =
+      StreamController<Map<int, double>>.broadcast();
+  final _colorCorrectionController =
+      StreamController<ColorCorrectionState>.broadcast();
+  final _mediaController = StreamController<MediaState>.broadcast();
 
   /// Stream of lens state updates
   Stream<LensState> get lensUpdates => _lensController.stream;
@@ -34,6 +40,19 @@ class CameraWebSocket {
 
   /// Stream of connection state changes
   Stream<bool> get connectionUpdates => _connectionController.stream;
+
+  /// Stream of slate state updates
+  Stream<SlateState> get slateUpdates => _slateController.stream;
+
+  /// Stream of audio level updates (channel index -> level normalized)
+  Stream<Map<int, double>> get audioLevelUpdates => _audioLevelController.stream;
+
+  /// Stream of color correction state updates
+  Stream<ColorCorrectionState> get colorCorrectionUpdates =>
+      _colorCorrectionController.stream;
+
+  /// Stream of media state updates
+  Stream<MediaState> get mediaUpdates => _mediaController.stream;
 
   /// Connect to the camera WebSocket
   Future<void> connect() async {
@@ -109,6 +128,43 @@ class CameraWebSocket {
             timecode: payload['timecode'] as String? ?? '00:00:00:00',
           ));
           break;
+
+        // Slate updates
+        case 'slates/nextClip':
+          _slateController.add(SlateState.fromJson(payload));
+          break;
+
+        // Audio level updates
+        case 'audio/channel/0/level':
+        case 'audio/channel/1/level':
+        case 'audio/channel/2/level':
+        case 'audio/channel/3/level':
+          final channelIndex = int.tryParse(type!.split('/')[2]) ?? 0;
+          final level = (payload['normalised'] as num?)?.toDouble() ?? 0.0;
+          _audioLevelController.add({channelIndex: level});
+          break;
+
+        // Color correction updates
+        case 'colorCorrection/lift':
+          _colorCorrectionController.add(ColorCorrectionState(
+            lift: ColorWheelValues.fromJson(payload),
+          ));
+          break;
+        case 'colorCorrection/gamma':
+          _colorCorrectionController.add(ColorCorrectionState(
+            gamma: ColorWheelValues.fromJson(payload),
+          ));
+          break;
+        case 'colorCorrection/gain':
+          _colorCorrectionController.add(ColorCorrectionState(
+            gain: ColorWheelValues.fromJson(payload),
+          ));
+          break;
+
+        // Media updates
+        case 'media/devices':
+          _mediaController.add(MediaState.fromJson(payload));
+          break;
       }
     } catch (e) {
       // Ignore malformed messages
@@ -154,5 +210,9 @@ class CameraWebSocket {
     _videoController.close();
     _transportController.close();
     _connectionController.close();
+    _slateController.close();
+    _audioLevelController.close();
+    _colorCorrectionController.close();
+    _mediaController.close();
   }
 }

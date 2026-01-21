@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/camera_connection_provider.dart';
 import 'screens/connection_screen.dart';
-import 'screens/control_screen.dart';
+import 'screens/main_screen.dart';
 
 class BlackmagicControlApp extends StatelessWidget {
   const BlackmagicControlApp({super.key});
@@ -36,7 +36,7 @@ class BlackmagicControlApp extends StatelessWidget {
       home: Consumer<CameraConnectionProvider>(
         builder: (context, connection, _) {
           if (connection.isConnected) {
-            return const ControlScreen();
+            return const MainScreen();
           }
           return const ConnectionScreen();
         },

@@ -1,145 +1,222 @@
-Here is the unified and logically structured documentation for your Android/Desktop application. This guide consolidates all endpoints into functional groups (Control, Workflow, System) and integrates the WebSocket notification logic for a complete developer reference.
+Here is the **Master Developer Documentation** for your Blackmagic Camera Control App. This version unifies the previous structures and integrates all critical "missing" professional features (Playback, Streaming, Presets, Discovery) into a single, logical reference.
 
-### **1. General Configuration**
+### **1. General Configuration & Discovery**
 
 - **Protocol:** HTTP / REST
+
 - **Format:** JSON
+
 - **Base URL:** `https://<camera-ip-address>/control/api/v1`
-- **Prerequisites:**
-- Enable **"Web media manager"** in the camera's _Blackmagic Camera Setup_ > _Network Access_ settings.
-- **HTTPS:** The connection should use HTTPS. Certificates may be self-signed on local networks.
+
+- **Network Discovery (mDNS):**
+- **Service Type:** `_http._tcp.` or `_blackmagic._tcp.`
+- **Domain:** `local.`
+- **Logic:** Scan for services, then verify by requesting `GET /system/product`. Use the returned `deviceName` for UI labels, not the hostname.
+
+- **Prerequisites:** Enable "Web media manager" in Camera Setup > Network Access. Connection requires HTTPS (accept self-signed certs).
 
 ---
 
 ### **2. Camera Control API (Optics & Image)**
 
-This section covers the physical manipulation of the camera lens and sensor parameters.
+_Physical manipulation of the lens and sensor._
 
 #### **2.1. Lens Control**
 
-| Feature          | Method    | Endpoint                  | Payload / Description                                       |
-| ---------------- | --------- | ------------------------- | ----------------------------------------------------------- |
-| **Get Focus**    | `GET`     | `/lens/focus`             | Returns `{"normalised": 0.5}` (0.0=Near, 1.0=Infinity)      |
-| **Set Focus**    | `PUT`     | `/lens/focus`             | Body: `{"normalised": 0.6}`                                 |
-| **Auto Focus**   | `PUT`     | `/lens/focus/doAutoFocus` | Body: `{"position": {"x": 0.5, "y": 0.5}}` (Center trigger) |
-| **Get Aperture** | `GET`     | `/lens/iris`              | Returns `{"apertureStop": 5.6, "normalised": 0.4}`          |
-| **Set Aperture** | `PUT`     | `/lens/iris`              | Body: `{"apertureStop": 4.0}` OR `{"normalised": 0.5}`      |
-| **Zoom**         | `GET/PUT` | `/lens/zoom`              | Body: `{"focalLength": 50}` or `{"normalised": 0.5}`        |
+| Feature       | Method | Endpoint      | Payload / Description                                  |
+| ------------- | ------ | ------------- | ------------------------------------------------------ |
+| **Get Focus** | `GET`  | `/lens/focus` | Returns `{"normalised": 0.5}` (0.0=Near, 1.0=Infinity) |
+
+|
+| **Set Focus** | `PUT` | `/lens/focus` | Body: `{"normalised": 0.6}` (Manual focus)
+
+|
+| **Trigger AF** | `PUT` | `/lens/focus/doAutoFocus` | Body: `{"position": {"x": 0.5, "y": 0.5}}` (Center ROI)
+
+|
+| **Aperture** | `GET` | `/lens/iris` | Returns `{"apertureStop": 5.6, "normalised": 0.4}`
+
+|
+| **Set Aperture** | `PUT` | `/lens/iris` | Body: `{"apertureStop": 4.0}` OR `{"normalised": 0.5}`
+
+|
+| **Zoom** | `PUT` | `/lens/zoom` | Body: `{"focalLength": 50}` (mm) or `{"normalised": 0.5}`
+
+|
+| **OIS** | `PUT` | `/lens/opticalImageStabilization` | Body: `{"enabled": true}`
+
+|
 
 #### **2.2. Exposure & Sensor**
 
-| Feature           | Method    | Endpoint                     | Payload / Description                                             |
-| ----------------- | --------- | ---------------------------- | ----------------------------------------------------------------- |
-| **Shutter**       | `GET`     | `/video/shutter`             | Returns `{"shutterSpeed": 50, "shutterAngle": 180.0}`             |
-| **Set Shutter**   | `PUT`     | `/video/shutter`             | Body: `{"shutterSpeed": 100}` OR `{"shutterAngle": 172.8}`        |
-| **ISO**           | `GET`     | `/video/iso`                 | Returns `{"iso": 400}`                                            |
-| **Set ISO**       | `PUT`     | `/video/iso`                 | Body: `{"iso": 800}` (Use `/video/supportedISOs` for valid list)  |
-| **White Balance** | `GET/PUT` | `/video/whiteBalance`        | Body: `{"whiteBalance": 5600}` (Kelvin)                           |
-| **Auto WB**       | `PUT`     | `/video/whiteBalance/doAuto` | Triggers Auto White Balance calculation                           |
-| **ND Filter**     | `GET/PUT` | `/video/ndFilter`            | Body: `{"stop": 2.0}` (Valid stops: 0.0, 2.0, 4.0, 6.0 typically) |
+| Feature     | Method | Endpoint         | Payload / Description                                 |
+| ----------- | ------ | ---------------- | ----------------------------------------------------- |
+| **Shutter** | `GET`  | `/video/shutter` | Returns `{"shutterSpeed": 50, "shutterAngle": 180.0}` |
 
-#### **2.3. Color Correction**
+|
+| **Set Shutter** | `PUT` | `/video/shutter` | Body: `{"shutterSpeed": 100}` OR `{"shutterAngle": 172.8}`
 
-Direct control over the camera's internal color processing (similar to CCU).
+|
+| **ISO** | `GET` | `/video/iso` | Returns `{"iso": 400}`
 
-- **Endpoints:** `/colorCorrection/lift`, `/colorCorrection/gamma`, `/colorCorrection/gain`
-- **Body Example (Lift):**
+|
+| **Set ISO** | `PUT` | `/video/iso` | Body: `{"iso": 800}`
 
-```json
-{
-  "red": -0.1,
-  "green": -0.1,
-  "blue": -0.1,
-  "luma": -0.1
-}
-```
+|
+| **White Balance** | `PUT` | `/video/whiteBalance` | Body: `{"whiteBalance": 5600}` (Kelvin)
+
+|
+| **Auto WB** | `PUT` | `/video/whiteBalance/doAuto` | Triggers Auto WB calculation
+
+|
+| **ND Filter** | `PUT` | `/video/ndFilter` | Body: `{"stop": 2.0}` (Stops: 0.0, 2.0, 4.0, 6.0)
+
+|
+| **Auto Exposure** | `PUT` | `/video/autoExposure` | Body: `{"mode": "Continuous"}` (Off, Continuous, OneShot)
+
+|
+
+#### **2.3. Color Correction (CCU)**
+
+_Direct control over internal color processing._
+
+- **Endpoints:** `/colorCorrection/lift`, `/colorCorrection/gamma`, `/colorCorrection/gain`, `/colorCorrection/offset`, `/colorCorrection/contrast`
+
+- **Body Example (Lift):** `{"red": -0.05, "green": -0.05, "blue": -0.05, "luma": -0.05}`
 
 ---
 
-### **3. Production Workflow API (Media & Metadata)**
+### **3. Production Workflow API (Media & Transport)**
 
-These functions are essential for the "Remote Assistant" aspect of your app, handling recording, metadata, and storage.
+_Managing the "Action", recording, and reviewing footage._
 
-#### **3.1. Transport Control**
+#### **3.1. Transport (Recording)**
 
 - **Status:** `GET /transports/0/record` → `{"recording": true}`
-- **Timecode:** `GET /transports/0/timecode` → `{"display": "01:00:00:00"}`
-- **Action:**
-- **Start:** `POST /transports/0/record` with body `{"clipName": "Scene_1"}` (Optional name).
-- **Stop:** `POST /transports/0/stop`.
 
-#### **3.2. Smart Slate (Metadata)**
+- **Timecode:** `GET /transports/0/timecode` → `{"display": "01:20:10:05"}`
 
-Manage metadata for the _next_ clip to be recorded.
+- **Start Rec:** `POST /transports/0/record` (Body: `{"clipName": "Scene_1_Take_1"}`)
+
+- **Stop Rec:** `POST /transports/0/stop`
+
+#### **3.2. Playback & Review (Missing in previous drafts)**
+
+- **List Clips:** `GET /clips` (Returns array of all clips on card)
+
+- **Timeline:** `GET /timelines/0` (Current playback timeline)
+
+- **Start Play:** `POST /transports/0/play`
+
+- **Transport Control (Scrub):** `PUT /transports/0/playback`
+- Body: `{"type": "Shuttle", "speed": 2.0}` (Fast Forward) or `{"type": "Jog", "position": 1500}` (Jump to frame).
+
+- **Current Clip:** `GET /transports/0/clipIndex` (Which clip index is playing)
+
+#### **3.3. Smart Slate (Metadata)**
 
 - **Endpoint:** `/slates/nextClip`
-- **Method:** `GET` (Read current), `PUT` (Update)
-- **Body (Update):**
+
+- **Update Body:**
 
 ```json
 {
   "clip": {
     "scene": "1A",
-    "take": 2, // Increment this via a "+1" button in your app
-    "goodTake": true, // Tags clip as "Good" in metadata
-    "shotType": "WS" // Options: WS, MS, MCU, CU, BCU, ECU
+    "take": 3,
+    "goodTake": true, // "Circle" the take
+    "shotType": "CU" // WS, MS, MCU, CU, etc.
   }
 }
 ```
 
-#### **3.3. Media Management**
+#### **3.4. Media Management**
 
-- **Check Storage:** `GET /media/workingset`
-- **Response:** Returns array including `remainingRecordTime` (seconds) and `remainingSpace` (bytes). **Crucial** for "Card Full" warnings.
+- **Storage Check:** `GET /media/workingset`
+- Response includes `remainingRecordTime` (seconds) and `remainingSpace` (bytes).
 
 - **Format Card:**
 
-1. `GET /media/devices/{name}/doformat` (Get protection key).
-2. `PUT /media/devices/{name}/doformat` (Send key + filesystem + volume name).
+1.  `GET /media/devices/{name}/doformat` → Returns `key`.
+
+2.  `PUT /media/devices/{name}/doformat` → Body: `{"key": "...", "filesystem": "ExFAT", "volume": "Cam_A"}`.
 
 ---
 
 ### **4. System & Monitoring API**
 
-Tools to assist the camera operator and monitor system health.
+_Tools for the Operator and System Health._
 
-#### **4.1. Monitoring Overlays**
+#### **4.1. Monitoring Overlays (HUD)**
 
-Control what appears on the camera's LCD/HDMI out.
+Requires `{displayName}` (e.g., "LCD", "HDMI") from `GET /monitoring/display`.
 
 - **Focus Peaking:** `PUT /monitoring/{displayName}/focusAssist`
 - Body: `{"enabled": true, "mode": "Peak", "color": "Red"}`
 
 - **Zebra:** `PUT /monitoring/{displayName}/zebra` → `{"enabled": true}`
+
+- **False Color:** `PUT /monitoring/{displayName}/falseColor` → `{"enabled": true}`
+
+- **Display LUT:** `PUT /monitoring/{displayName}/displayLUT` → `{"enabled": true}`
+
 - **Frame Guides:** `PUT /monitoring/{displayName}/frameGuide` → `{"enabled": true}`
-- _Note:_ Get valid `{displayName}` (e.g., "LCD") via `GET /monitoring/display`.
 
-#### **4.2. Audio Control**
+#### **4.2. Audio Control & Filters**
 
-- **Levels (VU):** `GET /audio/channel/{index}/level` → `{"normalised": 0.8, "gain": -6.0}`.
-- **Input Source:** `PUT /audio/channel/{index}/input` → `{"input": "Mic"}` (or "Line").
-- **Phantom Power:** `PUT /audio/channel/{index}/phantomPower` → `{"enabled": true}`.
+- **Levels (VU):** `GET /audio/channel/{index}/level`
 
-#### **4.3. System Format**
+- **Input Source:** `PUT /audio/channel/{index}/input` → `{"input": "Mic"}` (or "Line")
 
-- **Get Format:** `GET /system/format`
-- Returns Codec (e.g., "Blackmagic RAW"), Resolution (`6144x3456`), and Frame Rate (`24.00`).
+- **Phantom Power:** `PUT /audio/channel/{index}/phantomPower` → `{"enabled": true}`
+
+- **Low Cut Filter:** `PUT /audio/channel/{index}/lowCutFilter` → `{"enabled": true}`
+
+- **Padding:** `PUT /audio/channel/{index}/padding` → `{"enabled": true}`
 
 ---
 
-### **5. Real-Time Notification API (WebSocket)**
+### **5. Advanced Features**
 
-Use this for high-performance UI updates (Focus wheels, VU meters, Tally) instead of polling.
+_Capabilities Discovery, Streaming, and Presets._
+
+#### **5.1. Capabilities Discovery (Dynamic UI)**
+
+_Do not hardcode values; ask the camera what it supports._
+
+- **Supported ISOs:** `GET /video/supportedISOs`
+
+- **Supported Codecs:** `GET /system/supportedCodecFormats`
+
+- **Supported Res/FrameRates:** `GET /system/supportedVideoFormats`
+
+- **Supported ND Stops:** `GET /video/supportedNDFilters`
+
+#### **5.2. Livestreaming Control**
+
+- **Status:** `GET /livestreams/0` (Returns "Streaming", "Idle", "Connecting")
+
+- **Start/Stop:** `PUT /livestreams/0/start` / `stop`
+
+- **Configure Platform:** `PUT /livestreams/0/activePlatform`
+- Body: `{"url": "rtmp://...", "key": "...", "quality": "Streaming High"}`
+
+#### **5.3. Presets Management**
+
+- **List Presets:** `GET /presets`
+
+- **Load Preset:** `PUT /presets/active` → Body: `{"preset": "MySetup.cset"}`
+
+- **Save Current State:** `PUT /presets/{presetName}`
+
+---
+
+### **6. Real-Time Notification API (WebSocket)**
 
 - **URL:** `ws://<camera-ip>/control/api/v1/notification`
 
-#### **5.1. Connection Flow**
-
-1. **Connect:** Open WebSocket.
-2. **Handshake:** Receive `{"type": "event", "data": {"action": "websocketOpened"}}`.
-3. **Subscribe:** Send a JSON message specifying which REST paths to watch.
-
-#### **5.2. Subscription Command**
+- **Flow:** Connect -> Handshake -> Subscribe -> Listen.
+- **Subscription Payload:**
 
 ```json
 {
@@ -150,38 +227,11 @@ Use this for high-performance UI updates (Focus wheels, VU meters, Tally) instea
     "/video/iso",
     "/video/shutter",
     "/transports/0/record",
+    "/transports/0/timecode",
     "/audio/channel/0/level",
     "/media/workingset"
   ]
 }
 ```
 
-#### **5.3. Event Message Structure**
-
-When a setting changes, the camera sends:
-
-```json
-{
-  "type": "event",
-  "data": {
-    "action": "propertyValueChanged",
-    "property": "/lens/focus",
-    "value": {
-      "normalised": 0.65
-    }
-  }
-}
-```
-
-- **Handling:** Parse `data.property` to identify _what_ changed, and apply `data.value` to your UI component immediately.
-
----
-
-### **6. App Architecture & Best Practices**
-
-- **Hybrid Approach:** Use **REST (GET/PUT)** for initial setup and user actions (button clicks), and **WebSocket** for listening to state changes. This ensures your UI never falls out of sync if the camera is adjusted physically.
-- **Error Handling:**
-- **404:** Feature not supported (e.g., ND filter on a camera without one). Hide this UI element.
-- **400:** Invalid value. Revert UI to the last known good value.
-
-- **Discovery:** Use **mDNS** (Service type `_http._tcp.`) to auto-discover cameras on the LAN instead of asking users to type IP addresses. Look for devices named `*.local` (e.g., `ursa-broadcast-g2.local`).
+- **Event Handling:** Listen for `propertyValueChanged` events and update UI immediately.

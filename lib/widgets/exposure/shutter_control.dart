@@ -5,15 +5,12 @@ import '../../providers/camera_state_provider.dart';
 class ShutterControl extends StatelessWidget {
   const ShutterControl({super.key});
 
-  static const List<int> _commonShutterSpeeds = [
-    24, 25, 30, 48, 50, 60, 96, 100, 120, 180, 250, 500, 1000, 2000,
-  ];
-
   @override
   Widget build(BuildContext context) {
     final cameraState = context.watch<CameraStateProvider>();
     final video = cameraState.video;
     final isAuto = video.shutterAuto;
+    final supportedShutterSpeeds = cameraState.capabilities.supportedShutterSpeeds;
 
     return Card(
       child: Padding(
@@ -42,6 +39,7 @@ class ShutterControl extends StatelessWidget {
                     FilterChip(
                       label: const Text('AUTO'),
                       selected: isAuto,
+                      showCheckmark: false,
                       onSelected: (_) {
                         cameraState.toggleShutterAuto();
                       },
@@ -54,11 +52,12 @@ class ShutterControl extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _commonShutterSpeeds.map((speed) {
+              children: supportedShutterSpeeds.map((speed) {
                 final isSelected = speed == video.shutterSpeed;
                 return ChoiceChip(
                   label: Text('1/$speed'),
                   selected: isSelected,
+                  showCheckmark: false,
                   onSelected: isAuto ? null : (_) {
                     cameraState.setShutterSpeed(speed);
                   },

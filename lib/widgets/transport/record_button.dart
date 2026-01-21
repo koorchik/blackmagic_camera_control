@@ -34,8 +34,26 @@ class _RecordButtonState extends State<RecordButton>
 
     setState(() => _isLoading = true);
 
+    final cameraState = context.read<CameraStateProvider>();
+
     try {
-      await context.read<CameraStateProvider>().toggleRecording();
+      await cameraState.toggleRecording();
+
+      // Check if there was an error
+      if (mounted && cameraState.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(cameraState.error!),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Dismiss',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

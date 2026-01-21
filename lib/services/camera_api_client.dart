@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../utils/constants.dart';
+import '../models/camera_state.dart';
 
 /// HTTP REST API client for Blackmagic Camera
 class CameraApiClient {
@@ -173,6 +174,293 @@ class CameraApiClient {
         '${minutes.toString().padLeft(2, '0')}:'
         '${seconds.toString().padLeft(2, '0')}:'
         '${frames.toString().padLeft(2, '0')}';
+  }
+
+  // ========== SLATE/METADATA CONTROL ==========
+
+  /// Get slate/metadata for next clip
+  Future<SlateState> getSlate() async {
+    final data = await _get(ApiEndpoints.slateNextClip);
+    return SlateState.fromJson(data);
+  }
+
+  /// Set slate/metadata for next clip
+  Future<void> setSlate(SlateState slate) async {
+    await _put(ApiEndpoints.slateNextClip, slate.toJson());
+  }
+
+  /// Update specific slate fields
+  Future<void> updateSlate(Map<String, dynamic> fields) async {
+    await _put(ApiEndpoints.slateNextClip, fields);
+  }
+
+  // ========== AUDIO CONTROL ==========
+
+  /// Get audio level for a channel
+  Future<double> getAudioLevel(int channelIndex) async {
+    final data = await _get(ApiEndpoints.audioChannelLevel(channelIndex));
+    return (data['normalised'] as num?)?.toDouble() ?? 0.0;
+  }
+
+  /// Get audio input type for a channel
+  Future<AudioInputType> getAudioInput(int channelIndex) async {
+    final data = await _get(ApiEndpoints.audioChannelInput(channelIndex));
+    final inputStr = data['input'] as String?;
+    return inputStr == 'Line' ? AudioInputType.line : AudioInputType.mic;
+  }
+
+  /// Set audio input type for a channel
+  Future<void> setAudioInput(int channelIndex, AudioInputType type) async {
+    await _put(ApiEndpoints.audioChannelInput(channelIndex), {
+      'input': type.code,
+    });
+  }
+
+  /// Get phantom power state for a channel
+  Future<bool> getPhantomPower(int channelIndex) async {
+    final data = await _get(ApiEndpoints.audioChannelPhantom(channelIndex));
+    return data['phantomPower'] as bool? ?? false;
+  }
+
+  /// Set phantom power state for a channel
+  Future<void> setPhantomPower(int channelIndex, bool enabled) async {
+    await _put(ApiEndpoints.audioChannelPhantom(channelIndex), {
+      'phantomPower': enabled,
+    });
+  }
+
+  // ========== MEDIA MANAGEMENT ==========
+
+  /// Get media working set (active recording slot)
+  Future<int> getMediaWorkingSet() async {
+    final data = await _get(ApiEndpoints.mediaWorkingSet);
+    return data['workingsetIndex'] as int? ?? 0;
+  }
+
+  /// Set media working set (active recording slot)
+  Future<void> setMediaWorkingSet(int index) async {
+    await _put(ApiEndpoints.mediaWorkingSet, {'workingsetIndex': index});
+  }
+
+  /// Get all media devices
+  Future<List<MediaDevice>> getMediaDevices() async {
+    final data = await _get(ApiEndpoints.mediaDevices);
+    final devicesJson = data['devices'] as List<dynamic>? ?? [];
+    return devicesJson
+        .map((d) => MediaDevice.fromJson(d as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Get a specific media device
+  Future<MediaDevice> getMediaDevice(String deviceName) async {
+    final data = await _get(ApiEndpoints.mediaDevice(deviceName));
+    return MediaDevice.fromJson(data);
+  }
+
+  /// Start format operation - returns format key for confirmation
+  Future<String> getFormatKey(String deviceName) async {
+    final data = await _get(ApiEndpoints.mediaFormat(deviceName));
+    return data['key'] as String? ?? '';
+  }
+
+  /// Confirm format operation with key and filesystem type
+  Future<void> confirmFormat(
+    String deviceName,
+    String key,
+    FilesystemType filesystem,
+  ) async {
+    await _put(ApiEndpoints.mediaFormat(deviceName), {
+      'key': key,
+      'filesystem': filesystem.code,
+    });
+  }
+
+  // ========== MONITORING CONTROL ==========
+
+  /// Get available displays
+  Future<List<String>> getAvailableDisplays() async {
+    final data = await _get(ApiEndpoints.monitoringDisplays);
+    final displays = data['displays'] as List<dynamic>? ?? [];
+    return displays.cast<String>();
+  }
+
+  /// Get focus assist settings for a display
+  Future<FocusAssistState> getFocusAssist(String displayName) async {
+    final data = await _get(ApiEndpoints.focusAssist(displayName));
+    return FocusAssistState.fromJson(data);
+  }
+
+  /// Set focus assist settings for a display
+  Future<void> setFocusAssist(
+    String displayName,
+    FocusAssistState state,
+  ) async {
+    await _put(ApiEndpoints.focusAssist(displayName), state.toJson());
+  }
+
+  /// Get zebra settings for a display
+  Future<bool> getZebraEnabled(String displayName) async {
+    final data = await _get(ApiEndpoints.zebra(displayName));
+    return data['enabled'] as bool? ?? false;
+  }
+
+  /// Set zebra enabled for a display
+  Future<void> setZebraEnabled(String displayName, bool enabled) async {
+    await _put(ApiEndpoints.zebra(displayName), {'enabled': enabled});
+  }
+
+  /// Get frame guides settings for a display
+  Future<FrameGuidesState> getFrameGuides(String displayName) async {
+    final data = await _get(ApiEndpoints.frameGuides(displayName));
+    return FrameGuidesState.fromJson(data);
+  }
+
+  /// Set frame guides settings for a display
+  Future<void> setFrameGuides(
+    String displayName,
+    FrameGuidesState state,
+  ) async {
+    await _put(ApiEndpoints.frameGuides(displayName), state.toJson());
+  }
+
+  // ========== COLOR CORRECTION CONTROL ==========
+
+  /// Get color lift (shadows)
+  Future<ColorWheelValues> getColorLift() async {
+    final data = await _get(ApiEndpoints.colorLift);
+    return ColorWheelValues.fromJson(data);
+  }
+
+  /// Set color lift (shadows)
+  Future<void> setColorLift(ColorWheelValues values) async {
+    await _put(ApiEndpoints.colorLift, values.toJson());
+  }
+
+  /// Get color gamma (midtones)
+  Future<ColorWheelValues> getColorGamma() async {
+    final data = await _get(ApiEndpoints.colorGamma);
+    return ColorWheelValues.fromJson(data);
+  }
+
+  /// Set color gamma (midtones)
+  Future<void> setColorGamma(ColorWheelValues values) async {
+    await _put(ApiEndpoints.colorGamma, values.toJson());
+  }
+
+  /// Get color gain (highlights)
+  Future<ColorWheelValues> getColorGain() async {
+    final data = await _get(ApiEndpoints.colorGain);
+    return ColorWheelValues.fromJson(data);
+  }
+
+  /// Set color gain (highlights)
+  Future<void> setColorGain(ColorWheelValues values) async {
+    await _put(ApiEndpoints.colorGain, values.toJson());
+  }
+
+  /// Get saturation
+  Future<double> getColorSaturation() async {
+    final data = await _get(ApiEndpoints.colorSaturation);
+    return (data['saturation'] as num?)?.toDouble() ?? 1.0;
+  }
+
+  /// Set saturation
+  Future<void> setColorSaturation(double value) async {
+    await _put(ApiEndpoints.colorSaturation, {'saturation': value});
+  }
+
+  /// Get contrast
+  Future<double> getColorContrast() async {
+    final data = await _get(ApiEndpoints.colorContrast);
+    return (data['contrast'] as num?)?.toDouble() ?? 1.0;
+  }
+
+  /// Set contrast
+  Future<void> setColorContrast(double value) async {
+    await _put(ApiEndpoints.colorContrast, {'contrast': value});
+  }
+
+  /// Get hue
+  Future<double> getColorHue() async {
+    final data = await _get(ApiEndpoints.colorHue);
+    return (data['hue'] as num?)?.toDouble() ?? 0.0;
+  }
+
+  /// Set hue
+  Future<void> setColorHue(double value) async {
+    await _put(ApiEndpoints.colorHue, {'hue': value});
+  }
+
+  // ========== CAPABILITIES DISCOVERY ==========
+
+  /// Get supported ISO values
+  Future<List<int>> getSupportedISOs() async {
+    try {
+      final data = await _get(ApiEndpoints.supportedISOs);
+      final isos = data['supportedISOs'] as List<dynamic>?;
+      if (isos != null) {
+        return isos.map((e) => e as int).toList()..sort();
+      }
+      return [];
+    } on FeatureNotSupportedException {
+      return [];
+    }
+  }
+
+  /// Get supported shutter speeds
+  Future<List<int>> getSupportedShutterSpeeds() async {
+    try {
+      final data = await _get(ApiEndpoints.supportedShutterSpeeds);
+      final speeds = data['supportedShutterSpeeds'] as List<dynamic>?;
+      if (speeds != null) {
+        return speeds.map((e) => e as int).toList()..sort();
+      }
+      return [];
+    } on FeatureNotSupportedException {
+      return [];
+    }
+  }
+
+  /// Get supported ND filter stops
+  Future<List<double>> getSupportedNDFilters() async {
+    try {
+      final data = await _get(ApiEndpoints.supportedNDFilters);
+      final filters = data['supportedNDFilters'] as List<dynamic>?;
+      if (filters != null) {
+        return filters.map((e) => (e as num).toDouble()).toList()..sort();
+      }
+      return [];
+    } on FeatureNotSupportedException {
+      return [];
+    }
+  }
+
+  /// Get supported video formats (resolution + frame rate combinations)
+  Future<List<Map<String, dynamic>>> getSupportedVideoFormats() async {
+    try {
+      final data = await _get(ApiEndpoints.supportedVideoFormats);
+      final formats = data['supportedVideoFormats'] as List<dynamic>?;
+      if (formats != null) {
+        return formats.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } on FeatureNotSupportedException {
+      return [];
+    }
+  }
+
+  /// Get supported codec formats
+  Future<List<Map<String, dynamic>>> getSupportedCodecFormats() async {
+    try {
+      final data = await _get(ApiEndpoints.supportedCodecFormats);
+      final codecs = data['supportedCodecFormats'] as List<dynamic>?;
+      if (codecs != null) {
+        return codecs.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } on FeatureNotSupportedException {
+      return [];
+    }
   }
 
   // ========== PRIVATE METHODS ==========

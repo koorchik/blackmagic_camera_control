@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/camera_connection_provider.dart';
-import '../providers/camera_state_provider.dart';
 import '../widgets/focus/focus_slider.dart';
 import '../widgets/focus/autofocus_button.dart';
 import '../widgets/exposure/iso_selector.dart';
@@ -11,80 +8,26 @@ import '../widgets/lens/iris_control.dart';
 import '../widgets/lens/zoom_control.dart';
 import '../widgets/transport/record_button.dart';
 import '../widgets/transport/timecode_display.dart';
+import '../widgets/slate/slate_card.dart';
 
-class ControlScreen extends StatefulWidget {
+class ControlScreen extends StatelessWidget {
   const ControlScreen({super.key});
 
   @override
-  State<ControlScreen> createState() => _ControlScreenState();
-}
-
-class _ControlScreenState extends State<ControlScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // Defer initialization to after the build phase
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeCameraState();
-    });
-  }
-
-  void _initializeCameraState() {
-    final connection = context.read<CameraConnectionProvider>();
-    final cameraState = context.read<CameraStateProvider>();
-    cameraState.initialize(connection.cameraService);
-  }
-
-  Future<void> _disconnect() async {
-    final cameraState = context.read<CameraStateProvider>();
-    cameraState.initialize(null);
-    await context.read<CameraConnectionProvider>().disconnect();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final connection = context.watch<CameraConnectionProvider>();
-    final cameraState = context.watch<CameraStateProvider>();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 800;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(connection.cameraIp),
-        actions: [
-          if (cameraState.isLoading)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: cameraState.isLoading ? null : cameraState.refresh,
-            tooltip: 'Refresh',
-          ),
-          IconButton(
-            icon: const Icon(Icons.link_off),
-            onPressed: _disconnect,
-            tooltip: 'Disconnect',
-          ),
-        ],
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 800;
-
-          if (isWide) {
-            return _buildWideLayout();
-          }
-          return _buildNarrowLayout();
-        },
-      ),
+        if (isWide) {
+          return _buildWideLayout();
+        }
+        return _buildNarrowLayout();
+      },
     );
   }
 
-  Widget _buildNarrowLayout() {
+  static Widget _buildNarrowLayout() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -98,13 +41,15 @@ class _ControlScreenState extends State<ControlScreen> {
           const ShutterControl(),
           const WhiteBalanceControl(),
           const SizedBox(height: 16),
+          const SlateCard(),
+          const SizedBox(height: 16),
           _buildTransportCard(),
         ],
       ),
     );
   }
 
-  Widget _buildWideLayout() {
+  static Widget _buildWideLayout() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -118,6 +63,8 @@ class _ControlScreenState extends State<ControlScreen> {
                 const SizedBox(height: 8),
                 const IrisControl(),
                 const ZoomControl(),
+                const SizedBox(height: 8),
+                const SlateCard(),
               ],
             ),
           ),
@@ -139,31 +86,31 @@ class _ControlScreenState extends State<ControlScreen> {
     );
   }
 
-  Widget _buildFocusCard() {
-    return Card(
+  static Widget _buildFocusCard() {
+    return const Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const FocusSlider(),
-            const SizedBox(height: 16),
-            const AutofocusButton(),
+            FocusSlider(),
+            SizedBox(height: 16),
+            AutofocusButton(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTransportCard() {
-    return Card(
+  static Widget _buildTransportCard() {
+    return const Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: Column(
           children: [
-            const TimecodeDisplay(),
-            const SizedBox(height: 16),
-            const RecordButton(),
+            TimecodeDisplay(),
+            SizedBox(height: 16),
+            RecordButton(),
           ],
         ),
       ),
