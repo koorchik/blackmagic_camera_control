@@ -229,6 +229,70 @@ class CameraApiClient {
     });
   }
 
+  /// Get supported inputs for a channel
+  Future<List<String>> getSupportedInputs(int channelIndex) async {
+    try {
+      final data = await _get(ApiEndpoints.audioChannelSupportedInputs(channelIndex));
+      final inputs = data['supportedInputs'] as List<dynamic>?;
+      return inputs?.map((e) => e.toString()).toList() ?? [];
+    } on FeatureNotSupportedException {
+      return [];
+    }
+  }
+
+  /// Set audio level/gain for a channel
+  Future<void> setAudioLevel(int channelIndex, {double? gain, double? normalized}) async {
+    final body = <String, dynamic>{};
+    if (gain != null) body['gain'] = gain;
+    if (normalized != null) body['normalised'] = normalized.clamp(0.0, 1.0);
+    if (body.isEmpty) return;
+    await _put(ApiEndpoints.audioChannelLevel(channelIndex), body);
+  }
+
+  /// Get low cut filter state for a channel
+  Future<bool> getLowCutFilter(int channelIndex) async {
+    try {
+      final data = await _get(ApiEndpoints.audioChannelLowCutFilter(channelIndex));
+      return data['enabled'] as bool? ?? false;
+    } on FeatureNotSupportedException {
+      return false;
+    }
+  }
+
+  /// Set low cut filter state for a channel
+  Future<void> setLowCutFilter(int channelIndex, bool enabled) async {
+    await _put(ApiEndpoints.audioChannelLowCutFilter(channelIndex), {
+      'enabled': enabled,
+    });
+  }
+
+  /// Get padding state for a channel
+  Future<bool> getPadding(int channelIndex) async {
+    try {
+      final data = await _get(ApiEndpoints.audioChannelPadding(channelIndex));
+      return data['enabled'] as bool? ?? false;
+    } on FeatureNotSupportedException {
+      return false;
+    }
+  }
+
+  /// Set padding state for a channel
+  Future<void> setPadding(int channelIndex, bool enabled) async {
+    await _put(ApiEndpoints.audioChannelPadding(channelIndex), {
+      'enabled': enabled,
+    });
+  }
+
+  /// Get input description/capabilities for a channel
+  /// Returns min/max gain, phantom power support, padding support
+  Future<Map<String, dynamic>> getInputDescription(int channelIndex) async {
+    try {
+      return await _get(ApiEndpoints.audioChannelInputDescription(channelIndex));
+    } on FeatureNotSupportedException {
+      return {};
+    }
+  }
+
   // ========== MEDIA MANAGEMENT ==========
 
   /// Get media working set (active recording slot)

@@ -53,6 +53,18 @@ class _AudioScreenState extends State<AudioScreen> {
           onPhantomPowerChanged: (enabled) {
             cameraState.setPhantomPower(index, enabled);
           },
+          onGainChanged: (value) {
+            cameraState.setAudioGainDebounced(index, value);
+          },
+          onGainChangeEnd: (value) {
+            cameraState.setAudioGainFinal(index, value);
+          },
+          onLowCutFilterChanged: (enabled) {
+            cameraState.setLowCutFilter(index, enabled);
+          },
+          onPaddingChanged: (enabled) {
+            cameraState.setAudioPadding(index, enabled);
+          },
         );
       },
     );

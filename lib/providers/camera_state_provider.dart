@@ -534,6 +534,55 @@ class CameraStateProvider extends ChangeNotifier {
     });
   }
 
+  /// Set audio gain/level for a channel - debounced API call (for smooth dragging)
+  void setAudioGainDebounced(int channelIndex, double normalizedValue) {
+    _cameraService?.setAudioLevelDebounced(channelIndex, normalized: normalizedValue);
+  }
+
+  /// Set audio gain/level for a channel - final value (optimistic update)
+  void setAudioGainFinal(int channelIndex, double normalizedValue) {
+    final channels = List<AudioChannelState>.from(_state.audio.channels);
+    if (channelIndex < channels.length) {
+      channels[channelIndex] = channels[channelIndex].copyWith(
+        gainNormalized: normalizedValue,
+      );
+      _state = _state.copyWith(audio: _state.audio.copyWith(channels: channels));
+      notifyListeners();
+    }
+    _cameraService?.setAudioLevel(channelIndex, normalized: normalizedValue).catchError((e) {
+      _error = 'Failed to set audio gain: $e';
+      notifyListeners();
+    });
+  }
+
+  /// Set low cut filter for a channel
+  void setLowCutFilter(int channelIndex, bool enabled) {
+    final channels = List<AudioChannelState>.from(_state.audio.channels);
+    if (channelIndex < channels.length) {
+      channels[channelIndex] = channels[channelIndex].copyWith(lowCutFilter: enabled);
+      _state = _state.copyWith(audio: _state.audio.copyWith(channels: channels));
+      notifyListeners();
+    }
+    _cameraService?.setLowCutFilter(channelIndex, enabled).catchError((e) {
+      _error = 'Failed to set low cut filter: $e';
+      notifyListeners();
+    });
+  }
+
+  /// Set padding for a channel
+  void setAudioPadding(int channelIndex, bool enabled) {
+    final channels = List<AudioChannelState>.from(_state.audio.channels);
+    if (channelIndex < channels.length) {
+      channels[channelIndex] = channels[channelIndex].copyWith(padding: enabled);
+      _state = _state.copyWith(audio: _state.audio.copyWith(channels: channels));
+      notifyListeners();
+    }
+    _cameraService?.setPadding(channelIndex, enabled).catchError((e) {
+      _error = 'Failed to set padding: $e';
+      notifyListeners();
+    });
+  }
+
   // ========== MEDIA CONTROLS ==========
 
   /// Fetch fresh media state

@@ -40,6 +40,14 @@ class ApiEndpoints {
       '/control/api/v1/audio/channel/$index/input';
   static String audioChannelPhantom(int index) =>
       '/control/api/v1/audio/channel/$index/phantomPower';
+  static String audioChannelSupportedInputs(int index) =>
+      '/control/api/v1/audio/channel/$index/supportedInputs';
+  static String audioChannelLowCutFilter(int index) =>
+      '/control/api/v1/audio/channel/$index/lowCutFilter';
+  static String audioChannelPadding(int index) =>
+      '/control/api/v1/audio/channel/$index/padding';
+  static String audioChannelInputDescription(int index) =>
+      '/control/api/v1/audio/channel/$index/input/description';
 
   // Media endpoints
   static const String mediaWorkingSet = '/control/api/v1/media/workingset';

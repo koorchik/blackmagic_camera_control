@@ -186,6 +186,39 @@ class CameraService {
   Future<void> setPhantomPower(int channelIndex, bool enabled) =>
       _apiClient.setPhantomPower(channelIndex, enabled);
 
+  /// Get supported inputs for a channel
+  Future<List<String>> getSupportedInputs(int channelIndex) =>
+      _apiClient.getSupportedInputs(channelIndex);
+
+  /// Set audio level/gain for a channel
+  Future<void> setAudioLevel(int channelIndex, {double? gain, double? normalized}) =>
+      _apiClient.setAudioLevel(channelIndex, gain: gain, normalized: normalized);
+
+  /// Set audio level with debouncing
+  void setAudioLevelDebounced(int channelIndex, {double? gain, double? normalized}) {
+    _debounce(() => _apiClient.setAudioLevel(channelIndex, gain: gain, normalized: normalized));
+  }
+
+  /// Get low cut filter state for a channel
+  Future<bool> getLowCutFilter(int channelIndex) =>
+      _apiClient.getLowCutFilter(channelIndex);
+
+  /// Set low cut filter state for a channel
+  Future<void> setLowCutFilter(int channelIndex, bool enabled) =>
+      _apiClient.setLowCutFilter(channelIndex, enabled);
+
+  /// Get padding state for a channel
+  Future<bool> getPadding(int channelIndex) =>
+      _apiClient.getPadding(channelIndex);
+
+  /// Set padding state for a channel
+  Future<void> setPadding(int channelIndex, bool enabled) =>
+      _apiClient.setPadding(channelIndex, enabled);
+
+  /// Get input description/capabilities for a channel
+  Future<Map<String, dynamic>> getInputDescription(int channelIndex) =>
+      _apiClient.getInputDescription(channelIndex);
+
   /// Fetch initial audio state for all channels
   Future<AudioState> fetchAudioState({int channelCount = 2}) async {
     final channels = <AudioChannelState>[];
@@ -194,11 +227,30 @@ class CameraService {
         final input = await _safeCall(() => getAudioInput(i), AudioInputType.mic);
         final phantom = await _safeCall(() => getPhantomPower(i), false);
         final level = await _safeCall(() => getAudioLevel(i), 0.0);
+        final lowCut = await _safeCall(() => getLowCutFilter(i), false);
+        final padding = await _safeCall(() => getPadding(i), false);
+        final supportedInputs = await _safeCall(() => getSupportedInputs(i), <String>[]);
+        final inputDesc = await _safeCall(() => getInputDescription(i), <String, dynamic>{});
+
+        // Parse gain info from input description
+        final minGain = (inputDesc['gainRange']?['min'] as num?)?.toDouble() ?? -60.0;
+        final maxGain = (inputDesc['gainRange']?['max'] as num?)?.toDouble() ?? 24.0;
+
+        // Convert supportedInputs strings to AudioInputType
+        final supportedTypes = supportedInputs
+            .map((s) => AudioInputType.fromString(s))
+            .toList();
+
         channels.add(AudioChannelState(
           index: i,
           levelNormalized: level,
           inputType: input,
           phantomPower: phantom,
+          lowCutFilter: lowCut,
+          padding: padding,
+          supportedInputs: supportedTypes,
+          minGain: minGain,
+          maxGain: maxGain,
         ));
       } catch (e) {
         // Channel not available
