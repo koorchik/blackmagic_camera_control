@@ -457,6 +457,25 @@ class CameraStateProvider extends ChangeNotifier {
     });
   }
 
+  /// Reset slate to default values
+  void resetSlate() {
+    _state = _state.copyWith(
+      slate: const SlateState(),
+    );
+    notifyListeners();
+    _cameraService?.updateSlate({
+      'scene': '',
+      'take': 1,
+      'goodTake': false,
+      'shotType': null,
+      'sceneLocation': null,
+      'sceneTime': null,
+    }).catchError((e) {
+      _error = 'Failed to reset slate: $e';
+      notifyListeners();
+    });
+  }
+
   /// Fetch fresh slate data
   Future<void> refreshSlate() async {
     try {
