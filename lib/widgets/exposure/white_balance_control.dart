@@ -54,6 +54,7 @@ class WhiteBalanceControl extends StatelessWidget {
                 return ChoiceChip(
                   label: Text(entry.key),
                   selected: isSelected,
+                  showCheckmark: false,
                   onSelected: (_) {
                     cameraState.setWhiteBalance(entry.value);
                   },

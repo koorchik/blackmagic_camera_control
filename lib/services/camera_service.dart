@@ -133,8 +133,9 @@ class CameraService {
   /// Set shutter speed
   Future<void> setShutterSpeed(int value) => _apiClient.setShutterSpeed(value);
 
-  /// Set auto exposure mode ("Off", "Continuous", "OneShot")
-  Future<void> setAutoExposureMode(String mode) => _apiClient.setAutoExposureMode(mode);
+  /// Set auto exposure mode ("Off", "Continuous", "OneShot") for a specific type
+  Future<void> setAutoExposureMode(String mode, {String type = 'Shutter'}) =>
+      _apiClient.setAutoExposureMode(mode, type: type);
 
   /// Set white balance
   Future<void> setWhiteBalance(int kelvin) => _apiClient.setWhiteBalance(kelvin);

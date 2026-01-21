@@ -199,7 +199,7 @@ class CameraStateProvider extends ChangeNotifier {
   void setIrisFinal(double value) {
     _state = _state.copyWith(lens: _state.lens.copyWith(iris: value));
     notifyListeners();
-    _cameraService?.setIris(value);
+    _cameraService?.setIris(value).then((_) => _refreshShutterIfAuto());
   }
 
   /// Set zoom - debounced API call only (no state update, for smooth dragging)
@@ -220,7 +220,7 @@ class CameraStateProvider extends ChangeNotifier {
   void setIso(int value) {
     _state = _state.copyWith(video: _state.video.copyWith(iso: value));
     notifyListeners();
-    _cameraService?.setIso(value).catchError((e) {
+    _cameraService?.setIso(value).then((_) => _refreshShutterIfAuto()).catchError((e) {
       _error = 'Failed to set ISO: $e';
       notifyListeners();
     });
@@ -236,21 +236,43 @@ class CameraStateProvider extends ChangeNotifier {
     });
   }
 
-  /// Set auto exposure mode (optimistic update - fire and forget)
-  void setAutoExposureMode(String mode) {
-    final isAuto = mode != 'Off';
-    _state = _state.copyWith(video: _state.video.copyWith(shutterAuto: isAuto));
+  /// Set shutter auto exposure mode (optimistic update - fire and forget)
+  void setShutterAutoExposure(bool enabled) {
+    final mode = enabled ? 'Continuous' : 'Off';
+    _state = _state.copyWith(video: _state.video.copyWith(shutterAuto: enabled));
     notifyListeners();
-    _cameraService?.setAutoExposureMode(mode).catchError((e) {
-      _error = 'Failed to set auto exposure: $e';
+    _cameraService?.setAutoExposureMode(mode, type: 'Shutter').catchError((e) {
+      _error = 'Failed to set shutter auto exposure: $e';
       notifyListeners();
     });
   }
 
   /// Toggle shutter auto exposure on/off
   void toggleShutterAuto() {
-    final newMode = _state.video.shutterAuto ? 'Off' : 'Continuous';
-    setAutoExposureMode(newMode);
+    setShutterAutoExposure(!_state.video.shutterAuto);
+  }
+
+  /// Refresh shutter value from camera (useful when in auto mode)
+  Future<void> _refreshShutterIfAuto() async {
+    if (!_state.video.shutterAuto) return;
+
+    // Small delay to let camera adjust
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    try {
+      final shutterData = await _cameraService?.api.getShutter();
+      if (shutterData != null) {
+        final newSpeed = shutterData['shutterSpeed'] as int?;
+        if (newSpeed != null && newSpeed != _state.video.shutterSpeed) {
+          _state = _state.copyWith(
+            video: _state.video.copyWith(shutterSpeed: newSpeed),
+          );
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      // Ignore errors during refresh
+    }
   }
 
   /// Set white balance in Kelvin (optimistic update - fire and forget)
