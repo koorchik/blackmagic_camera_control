@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/camera_connection_provider.dart';
 import '../providers/camera_state_provider.dart';
+import '../widgets/common/error_banner.dart';
 import 'control_screen.dart';
 import 'audio_screen.dart';
 import 'media_screen.dart';
@@ -68,14 +69,30 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: const [
-          ControlScreen(),
-          AudioScreen(),
-          MediaScreen(),
-          MonitoringScreen(),
-          ColorScreen(),
+      body: Stack(
+        children: [
+          IndexedStack(
+            index: _currentIndex,
+            children: const [
+              ControlScreen(),
+              AudioScreen(),
+              MediaScreen(),
+              MonitoringScreen(),
+              ColorScreen(),
+            ],
+          ),
+          if (cameraState.error != null)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: ErrorBanner(
+                message: cameraState.error!,
+                onDismiss: () {
+                  cameraState.clearError();
+                },
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: NavigationBar(

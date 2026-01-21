@@ -3,9 +3,20 @@ import 'package:flutter/foundation.dart';
 import '../models/camera_state.dart';
 import '../models/camera_capabilities.dart';
 import '../services/camera_service.dart';
+import '../controllers/lens_controller.dart';
+import '../controllers/video_controller.dart';
+import '../controllers/transport_controller.dart';
+import '../controllers/slate_controller.dart';
+import '../controllers/audio_controller.dart';
+import '../controllers/media_controller.dart';
+import '../controllers/monitoring_controller.dart';
+import '../controllers/color_controller.dart';
+import '../utils/camera_defaults.dart';
 
 class CameraStateProvider extends ChangeNotifier {
-  CameraStateProvider();
+  CameraStateProvider() {
+    _initControllers();
+  }
 
   CameraState _state = const CameraState();
   CameraCapabilities _capabilities = CameraCapabilities.defaults;
@@ -15,6 +26,17 @@ class CameraStateProvider extends ChangeNotifier {
 
   final List<StreamSubscription<dynamic>> _subscriptions = [];
 
+  // Domain controllers
+  late final LensController _lensController;
+  late final VideoController _videoController;
+  late final TransportController _transportController;
+  late final SlateController _slateController;
+  late final AudioController _audioController;
+  late final MediaController _mediaController;
+  late final MonitoringController _monitoringController;
+  late final ColorController _colorController;
+
+  // State getters
   CameraState get state => _state;
   LensState get lens => _state.lens;
   VideoState get video => _state.video;
@@ -27,6 +49,67 @@ class CameraStateProvider extends ChangeNotifier {
   CameraCapabilities get capabilities => _capabilities;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  void _initControllers() {
+    _lensController = LensController(
+      getState: () => _state,
+      updateState: _updateState,
+      setError: _setError,
+      getService: () => _cameraService,
+    );
+    _videoController = VideoController(
+      getState: () => _state,
+      updateState: _updateState,
+      setError: _setError,
+      getService: () => _cameraService,
+    );
+    _transportController = TransportController(
+      getState: () => _state,
+      updateState: _updateState,
+      setError: _setError,
+      getService: () => _cameraService,
+    );
+    _slateController = SlateController(
+      getState: () => _state,
+      updateState: _updateState,
+      setError: _setError,
+      getService: () => _cameraService,
+    );
+    _audioController = AudioController(
+      getState: () => _state,
+      updateState: _updateState,
+      setError: _setError,
+      getService: () => _cameraService,
+    );
+    _mediaController = MediaController(
+      getState: () => _state,
+      updateState: _updateState,
+      setError: _setError,
+      getService: () => _cameraService,
+    );
+    _monitoringController = MonitoringController(
+      getState: () => _state,
+      updateState: _updateState,
+      setError: _setError,
+      getService: () => _cameraService,
+    );
+    _colorController = ColorController(
+      getState: () => _state,
+      updateState: _updateState,
+      setError: _setError,
+      getService: () => _cameraService,
+    );
+  }
+
+  void _updateState(CameraState newState) {
+    _state = newState;
+    notifyListeners();
+  }
+
+  void _setError(String error) {
+    _error = error;
+    notifyListeners();
+  }
 
   /// Initialize with a camera service
   void initialize(CameraService? service) {
@@ -52,9 +135,9 @@ class CameraStateProvider extends ChangeNotifier {
       service.lensUpdates.listen((lens) {
         _state = _state.copyWith(
           lens: _state.lens.copyWith(
-            focus: lens.focus != 0.5 ? lens.focus : null,
-            iris: lens.iris != 0.0 ? lens.iris : null,
-            zoom: lens.zoom != 0.0 ? lens.zoom : null,
+            focus: lens.focus != CameraDefaults.focus ? lens.focus : null,
+            iris: lens.iris != CameraDefaults.iris ? lens.iris : null,
+            zoom: lens.zoom != CameraDefaults.zoom ? lens.zoom : null,
           ),
         );
         notifyListeners();
@@ -65,9 +148,9 @@ class CameraStateProvider extends ChangeNotifier {
       service.videoUpdates.listen((video) {
         _state = _state.copyWith(
           video: _state.video.copyWith(
-            iso: video.iso != 800 ? video.iso : null,
-            shutterSpeed: video.shutterSpeed != 50 ? video.shutterSpeed : null,
-            whiteBalance: video.whiteBalance != 5600 ? video.whiteBalance : null,
+            iso: video.iso != CameraDefaults.iso ? video.iso : null,
+            shutterSpeed: video.shutterSpeed != CameraDefaults.shutterSpeed ? video.shutterSpeed : null,
+            whiteBalance: video.whiteBalance != CameraDefaults.whiteBalance ? video.whiteBalance : null,
           ),
         );
         notifyListeners();
@@ -95,7 +178,6 @@ class CameraStateProvider extends ChangeNotifier {
 
     _subscriptions.add(
       service.audioLevelUpdates.listen((levelMap) {
-        // Update levels for specific channels
         final channels = List<AudioChannelState>.from(_state.audio.channels);
         for (final entry in levelMap.entries) {
           if (entry.key < channels.length) {
@@ -111,7 +193,6 @@ class CameraStateProvider extends ChangeNotifier {
 
     _subscriptions.add(
       service.colorCorrectionUpdates.listen((colorUpdate) {
-        // Merge partial color correction updates
         _state = _state.copyWith(
           colorCorrection: _state.colorCorrection.copyWith(
             lift: colorUpdate.lift.isDefault ? null : colorUpdate.lift,
@@ -140,7 +221,6 @@ class CameraStateProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Fetch camera state and capabilities in parallel
       final results = await Future.wait([
         service.fetchFullState(),
         service.fetchCapabilities(),
@@ -159,743 +239,102 @@ class CameraStateProvider extends ChangeNotifier {
   /// Refresh the camera state from the API
   Future<void> refresh() => _fetchInitialState();
 
-  // ========== LENS CONTROLS ==========
-
-  /// Set focus - debounced API call only (no state update, for smooth dragging)
-  void setFocusDebounced(double value) {
-    _cameraService?.setFocusDebounced(value);
-  }
-
-  /// Set focus position immediately (for drag end, fire and forget)
-  void setFocusFinal(double value) {
-    _state = _state.copyWith(lens: _state.lens.copyWith(focus: value));
-    notifyListeners();
-    _cameraService?.setFocus(value);
-  }
-
-  /// Trigger autofocus
-  Future<void> triggerAutofocus() async {
-    try {
-      await _cameraService?.triggerAutofocus();
-      // Wait a bit for AF to complete, then fetch new focus position
-      await Future.delayed(const Duration(milliseconds: 500));
-      final newFocus = await _cameraService?.getFocus();
-      if (newFocus != null) {
-        _state = _state.copyWith(lens: _state.lens.copyWith(focus: newFocus));
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = 'Autofocus failed: $e';
-      notifyListeners();
-    }
-  }
-
-  /// Set iris - debounced API call only (no state update, for smooth dragging)
-  void setIrisDebounced(double value) {
-    _cameraService?.setIrisDebounced(value);
-  }
-
-  /// Set iris position immediately (for drag end, fire and forget)
-  void setIrisFinal(double value) {
-    _state = _state.copyWith(lens: _state.lens.copyWith(iris: value));
-    notifyListeners();
-    _cameraService?.setIris(value).then((_) => _refreshShutterIfAuto());
-  }
-
-  /// Set zoom - debounced API call only (no state update, for smooth dragging)
-  void setZoomDebounced(double value) {
-    _cameraService?.setZoomDebounced(value);
-  }
-
-  /// Set zoom position immediately (for drag end, fire and forget)
-  void setZoomFinal(double value) {
-    _state = _state.copyWith(lens: _state.lens.copyWith(zoom: value));
-    notifyListeners();
-    _cameraService?.setZoom(value);
-  }
-
-  // ========== VIDEO CONTROLS ==========
-
-  /// Set ISO value (optimistic update - fire and forget)
-  void setIso(int value) {
-    _state = _state.copyWith(video: _state.video.copyWith(iso: value));
-    notifyListeners();
-    _cameraService?.setIso(value).then((_) => _refreshShutterIfAuto()).catchError((e) {
-      _error = 'Failed to set ISO: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set shutter speed (optimistic update - fire and forget)
-  void setShutterSpeed(int value) {
-    _state = _state.copyWith(video: _state.video.copyWith(shutterSpeed: value));
-    notifyListeners();
-    _cameraService?.setShutterSpeed(value).catchError((e) {
-      _error = 'Failed to set shutter: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set shutter auto exposure mode (optimistic update - fire and forget)
-  void setShutterAutoExposure(bool enabled) {
-    final mode = enabled ? 'Continuous' : 'Off';
-    _state = _state.copyWith(video: _state.video.copyWith(shutterAuto: enabled));
-    notifyListeners();
-    _cameraService?.setAutoExposureMode(mode, type: 'Shutter').catchError((e) {
-      _error = 'Failed to set shutter auto exposure: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Toggle shutter auto exposure on/off
-  void toggleShutterAuto() {
-    setShutterAutoExposure(!_state.video.shutterAuto);
-  }
-
-  /// Refresh shutter value from camera (useful when in auto mode)
-  Future<void> _refreshShutterIfAuto() async {
-    if (!_state.video.shutterAuto) return;
-
-    // Small delay to let camera adjust
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    try {
-      final shutterData = await _cameraService?.api.getShutter();
-      if (shutterData != null) {
-        final newSpeed = shutterData['shutterSpeed'] as int?;
-        if (newSpeed != null && newSpeed != _state.video.shutterSpeed) {
-          _state = _state.copyWith(
-            video: _state.video.copyWith(shutterSpeed: newSpeed),
-          );
-          notifyListeners();
-        }
-      }
-    } catch (e) {
-      // Ignore errors during refresh
-    }
-  }
-
-  /// Set white balance in Kelvin (optimistic update - fire and forget)
-  void setWhiteBalance(int kelvin) {
-    _state = _state.copyWith(video: _state.video.copyWith(whiteBalance: kelvin));
-    notifyListeners();
-    _cameraService?.setWhiteBalance(kelvin).catchError((e) {
-      _error = 'Failed to set white balance: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set white balance tint (optimistic update - fire and forget)
-  void setWhiteBalanceTint(int tint) {
-    _state = _state.copyWith(video: _state.video.copyWith(whiteBalanceTint: tint));
-    notifyListeners();
-    _cameraService?.setWhiteBalanceTint(tint).catchError((e) {
-      _error = 'Failed to set tint: $e';
-      notifyListeners();
-    });
-  }
-
-  // ========== TRANSPORT CONTROLS ==========
-
   /// Clear error state
   void clearError() {
     _error = null;
     notifyListeners();
   }
 
-  /// Start recording
-  Future<void> startRecording() async {
-    final service = _cameraService;
-    if (service == null) return;
-
-    _error = null; // Clear any previous error
-
-    try {
-      await service.startRecording();
-
-      // Wait a moment for the camera to process the command
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      // Verify the actual recording state
-      final actualState = await service.api.getRecordingState();
-      _state = _state.copyWith(
-        transport: _state.transport.copyWith(isRecording: actualState),
+  // ========== LENS CONTROLS (delegated) ==========
+  void setFocusDebounced(double value) => _lensController.setFocusDebounced(value);
+  void setFocusFinal(double value) => _lensController.setFocusFinal(value);
+  Future<void> triggerAutofocus() => _lensController.triggerAutofocus();
+  void setIrisDebounced(double value) => _lensController.setIrisDebounced(value);
+  void setIrisFinal(double value) => _lensController.setIrisFinal(
+        value,
+        onComplete: () => _videoController.refreshShutterIfAuto(),
       );
-      notifyListeners();
+  void setZoomDebounced(double value) => _lensController.setZoomDebounced(value);
+  void setZoomFinal(double value) => _lensController.setZoomFinal(value);
 
-      if (!actualState) {
-        _error = 'Failed to start recording. Check media is inserted and has space.';
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = 'Failed to start recording: $e';
-      notifyListeners();
-    }
-  }
-
-  /// Stop recording
-  Future<void> stopRecording() async {
-    final service = _cameraService;
-    if (service == null) return;
-
-    _error = null; // Clear any previous error
-
-    try {
-      await service.stopRecording();
-
-      // Wait a moment for the camera to process the command
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      // Verify the actual recording state
-      final actualState = await service.api.getRecordingState();
-      _state = _state.copyWith(
-        transport: _state.transport.copyWith(isRecording: actualState),
+  // ========== VIDEO CONTROLS (delegated) ==========
+  void setIso(int value) => _videoController.setIso(
+        value,
+        onComplete: () => _videoController.refreshShutterIfAuto(),
       );
-      notifyListeners();
-
-      if (actualState) {
-        _error = 'Failed to stop recording.';
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = 'Failed to stop recording: $e';
-      notifyListeners();
-    }
-  }
-
-  /// Toggle recording state
-  Future<void> toggleRecording() async {
-    if (_state.transport.isRecording) {
-      await stopRecording();
-    } else {
-      await startRecording();
-    }
-  }
-
-  // ========== SLATE CONTROLS ==========
-
-  /// Update slate scene
-  void setSlateScene(String scene) {
-    _state = _state.copyWith(slate: _state.slate.copyWith(scene: scene));
-    notifyListeners();
-    _cameraService?.updateSlate({'scene': scene}).catchError((e) {
-      _error = 'Failed to update scene: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Update slate take number
-  void setSlateTake(int take) {
-    _state = _state.copyWith(slate: _state.slate.copyWith(take: take));
-    notifyListeners();
-    _cameraService?.updateSlate({'take': take}).catchError((e) {
-      _error = 'Failed to update take: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Increment slate take number
-  void incrementSlateTake() {
-    setSlateTake(_state.slate.take + 1);
-  }
-
-  /// Update good take flag
-  void setSlateGoodTake(bool goodTake) {
-    _state = _state.copyWith(slate: _state.slate.copyWith(goodTake: goodTake));
-    notifyListeners();
-    _cameraService?.updateSlate({'goodTake': goodTake}).catchError((e) {
-      _error = 'Failed to update good take: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Update shot type
-  void setSlateShotType(ShotType? shotType) {
-    _state = _state.copyWith(
-      slate: shotType == null
-          ? _state.slate.copyWith(clearShotType: true)
-          : _state.slate.copyWith(shotType: shotType),
-    );
-    notifyListeners();
-    _cameraService?.updateSlate({
-      'shotType': shotType?.code,
-    }).catchError((e) {
-      _error = 'Failed to update shot type: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Update scene location
-  void setSlateLocation(SceneLocation? location) {
-    _state = _state.copyWith(
-      slate: location == null
-          ? _state.slate.copyWith(clearSceneLocation: true)
-          : _state.slate.copyWith(sceneLocation: location),
-    );
-    notifyListeners();
-    _cameraService?.updateSlate({
-      'sceneLocation': location?.code,
-    }).catchError((e) {
-      _error = 'Failed to update location: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Update scene time
-  void setSlateTime(SceneTime? time) {
-    _state = _state.copyWith(
-      slate: time == null
-          ? _state.slate.copyWith(clearSceneTime: true)
-          : _state.slate.copyWith(sceneTime: time),
-    );
-    notifyListeners();
-    _cameraService?.updateSlate({
-      'sceneTime': time?.code,
-    }).catchError((e) {
-      _error = 'Failed to update time: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Reset slate to default values
-  void resetSlate() {
-    _state = _state.copyWith(
-      slate: const SlateState(),
-    );
-    notifyListeners();
-    _cameraService?.updateSlate({
-      'scene': '',
-      'take': 1,
-      'goodTake': false,
-      'shotType': null,
-      'sceneLocation': null,
-      'sceneTime': null,
-    }).catchError((e) {
-      _error = 'Failed to reset slate: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Fetch fresh slate data
-  Future<void> refreshSlate() async {
-    try {
-      final slate = await _cameraService?.getSlate();
-      if (slate != null) {
-        _state = _state.copyWith(slate: slate);
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = 'Failed to fetch slate: $e';
-      notifyListeners();
-    }
-  }
-
-  // ========== AUDIO CONTROLS ==========
-
-  /// Fetch fresh audio state
-  Future<void> refreshAudio() async {
-    try {
-      final audio = await _cameraService?.fetchAudioState();
-      if (audio != null) {
-        _state = _state.copyWith(audio: audio);
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = 'Failed to fetch audio state: $e';
-      notifyListeners();
-    }
-  }
-
-  /// Set audio input type for a channel
-  void setAudioInput(int channelIndex, AudioInputType type) {
-    final channels = List<AudioChannelState>.from(_state.audio.channels);
-    if (channelIndex < channels.length) {
-      channels[channelIndex] = channels[channelIndex].copyWith(inputType: type);
-      _state = _state.copyWith(audio: _state.audio.copyWith(channels: channels));
-      notifyListeners();
-    }
-    _cameraService?.setAudioInput(channelIndex, type).catchError((e) {
-      _error = 'Failed to set audio input: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set phantom power for a channel
-  void setPhantomPower(int channelIndex, bool enabled) {
-    final channels = List<AudioChannelState>.from(_state.audio.channels);
-    if (channelIndex < channels.length) {
-      channels[channelIndex] = channels[channelIndex].copyWith(phantomPower: enabled);
-      _state = _state.copyWith(audio: _state.audio.copyWith(channels: channels));
-      notifyListeners();
-    }
-    _cameraService?.setPhantomPower(channelIndex, enabled).catchError((e) {
-      _error = 'Failed to set phantom power: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set audio gain/level for a channel - debounced API call (for smooth dragging)
-  void setAudioGainDebounced(int channelIndex, double normalizedValue) {
-    _cameraService?.setAudioLevelDebounced(channelIndex, normalized: normalizedValue);
-  }
-
-  /// Set audio gain/level for a channel - final value (optimistic update)
-  void setAudioGainFinal(int channelIndex, double normalizedValue) {
-    final channels = List<AudioChannelState>.from(_state.audio.channels);
-    if (channelIndex < channels.length) {
-      channels[channelIndex] = channels[channelIndex].copyWith(
-        gainNormalized: normalizedValue,
-      );
-      _state = _state.copyWith(audio: _state.audio.copyWith(channels: channels));
-      notifyListeners();
-    }
-    _cameraService?.setAudioLevel(channelIndex, normalized: normalizedValue).catchError((e) {
-      _error = 'Failed to set audio gain: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set low cut filter for a channel
-  void setLowCutFilter(int channelIndex, bool enabled) {
-    final channels = List<AudioChannelState>.from(_state.audio.channels);
-    if (channelIndex < channels.length) {
-      channels[channelIndex] = channels[channelIndex].copyWith(lowCutFilter: enabled);
-      _state = _state.copyWith(audio: _state.audio.copyWith(channels: channels));
-      notifyListeners();
-    }
-    _cameraService?.setLowCutFilter(channelIndex, enabled).catchError((e) {
-      _error = 'Failed to set low cut filter: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set padding for a channel
-  void setAudioPadding(int channelIndex, bool enabled) {
-    final channels = List<AudioChannelState>.from(_state.audio.channels);
-    if (channelIndex < channels.length) {
-      channels[channelIndex] = channels[channelIndex].copyWith(padding: enabled);
-      _state = _state.copyWith(audio: _state.audio.copyWith(channels: channels));
-      notifyListeners();
-    }
-    _cameraService?.setPadding(channelIndex, enabled).catchError((e) {
-      _error = 'Failed to set padding: $e';
-      notifyListeners();
-    });
-  }
-
-  // ========== MEDIA CONTROLS ==========
-
-  /// Fetch fresh media state
-  Future<void> refreshMedia() async {
-    try {
-      final media = await _cameraService?.fetchMediaState();
-      if (media != null) {
-        _state = _state.copyWith(media: media);
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = 'Failed to fetch media state: $e';
-      notifyListeners();
-    }
-  }
-
-  /// Format a media device
-  Future<void> formatDevice(String deviceName, FilesystemType filesystem) async {
-    _state = _state.copyWith(
-      media: _state.media.copyWith(
-        formatInProgress: true,
-        formatDeviceName: deviceName,
-      ),
-    );
-    notifyListeners();
-
-    try {
-      await _cameraService?.formatDevice(deviceName, filesystem);
-      // Refresh media state after format
-      await refreshMedia();
-    } catch (e) {
-      _error = 'Failed to format device: $e';
-      notifyListeners();
-    } finally {
-      _state = _state.copyWith(
-        media: _state.media.copyWith(
-          formatInProgress: false,
-          clearFormatDeviceName: true,
-        ),
-      );
-      notifyListeners();
-    }
-  }
-
-  // ========== MONITORING CONTROLS ==========
-
-  /// Fetch fresh monitoring state
-  Future<void> refreshMonitoring() async {
-    try {
-      final monitoring = await _cameraService?.fetchMonitoringState();
-      if (monitoring != null) {
-        _state = _state.copyWith(monitoring: monitoring);
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = 'Failed to fetch monitoring state: $e';
-      notifyListeners();
-    }
-  }
-
-  /// Select a display for monitoring settings
-  void selectDisplay(String displayName) {
-    _state = _state.copyWith(
-      monitoring: _state.monitoring.copyWith(selectedDisplay: displayName),
-    );
-    notifyListeners();
-  }
-
-  /// Set focus assist for current display
-  void setFocusAssist(FocusAssistState focusAssist) {
-    final displayName = _state.monitoring.selectedDisplay;
-    if (displayName == null) return;
-
-    final currentDisplay = _state.monitoring.displays[displayName];
-    if (currentDisplay == null) return;
-
-    final updatedDisplay = currentDisplay.copyWith(focusAssist: focusAssist);
-    _state = _state.copyWith(
-      monitoring: _state.monitoring.updateDisplay(displayName, updatedDisplay),
-    );
-    notifyListeners();
-
-    _cameraService?.setFocusAssist(displayName, focusAssist).catchError((e) {
-      _error = 'Failed to set focus assist: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set zebra enabled for current display
-  void setZebraEnabled(bool enabled) {
-    final displayName = _state.monitoring.selectedDisplay;
-    if (displayName == null) return;
-
-    final currentDisplay = _state.monitoring.displays[displayName];
-    if (currentDisplay == null) return;
-
-    final updatedDisplay = currentDisplay.copyWith(zebraEnabled: enabled);
-    _state = _state.copyWith(
-      monitoring: _state.monitoring.updateDisplay(displayName, updatedDisplay),
-    );
-    notifyListeners();
-
-    _cameraService?.setZebraEnabled(displayName, enabled).catchError((e) {
-      _error = 'Failed to set zebra: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set frame guides for current display
-  void setFrameGuides(FrameGuidesState frameGuides) {
-    final displayName = _state.monitoring.selectedDisplay;
-    if (displayName == null) return;
-
-    final currentDisplay = _state.monitoring.displays[displayName];
-    if (currentDisplay == null) return;
-
-    final updatedDisplay = currentDisplay.copyWith(frameGuides: frameGuides);
-    _state = _state.copyWith(
-      monitoring: _state.monitoring.updateDisplay(displayName, updatedDisplay),
-    );
-    notifyListeners();
-
-    _cameraService?.setFrameGuides(displayName, frameGuides).catchError((e) {
-      _error = 'Failed to set frame guides: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set clean feed enabled for current display
-  void setCleanFeedEnabled(bool enabled) {
-    final displayName = _state.monitoring.selectedDisplay;
-    if (displayName == null) return;
-
-    final currentDisplay = _state.monitoring.displays[displayName];
-    if (currentDisplay == null) return;
-
-    final updatedDisplay = currentDisplay.copyWith(cleanFeedEnabled: enabled);
-    _state = _state.copyWith(
-      monitoring: _state.monitoring.updateDisplay(displayName, updatedDisplay),
-    );
-    notifyListeners();
-
-    _cameraService?.setCleanFeedEnabled(displayName, enabled).catchError((e) {
-      _error = 'Failed to set clean feed: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set display LUT enabled for current display
-  void setDisplayLutEnabled(bool enabled) {
-    final displayName = _state.monitoring.selectedDisplay;
-    if (displayName == null) return;
-
-    final currentDisplay = _state.monitoring.displays[displayName];
-    if (currentDisplay == null) return;
-
-    final updatedDisplay = currentDisplay.copyWith(displayLutEnabled: enabled);
-    _state = _state.copyWith(
-      monitoring: _state.monitoring.updateDisplay(displayName, updatedDisplay),
-    );
-    notifyListeners();
-
-    _cameraService?.setDisplayLutEnabled(displayName, enabled).catchError((e) {
-      _error = 'Failed to set display LUT: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set program feed display enabled (camera-wide)
-  void setProgramFeedEnabled(bool enabled) {
-    _state = _state.copyWith(
-      monitoring: _state.monitoring.copyWith(programFeedEnabled: enabled),
-    );
-    notifyListeners();
-
-    _cameraService?.setProgramFeedEnabled(enabled).catchError((e) {
-      _error = 'Failed to set program feed: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set video format (camera-wide)
-  void setVideoFormat(String name, String frameRate) {
-    final displayString = '$name $frameRate';
-    _state = _state.copyWith(
-      monitoring: _state.monitoring.copyWith(currentVideoFormat: displayString),
-    );
-    notifyListeners();
-
-    _cameraService?.setVideoFormat(name, frameRate).catchError((e) {
-      _error = 'Failed to set video format: $e';
-      notifyListeners();
-    });
-  }
-
-  // ========== COLOR CORRECTION CONTROLS ==========
-
-  /// Fetch fresh color correction state
-  Future<void> refreshColorCorrection() async {
-    try {
-      final colorCorrection = await _cameraService?.fetchColorCorrectionState();
-      if (colorCorrection != null) {
-        _state = _state.copyWith(colorCorrection: colorCorrection);
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = 'Failed to fetch color correction state: $e';
-      notifyListeners();
-    }
-  }
-
-  /// Set color lift (shadows) - debounced
-  void setColorLiftDebounced(ColorWheelValues values) {
-    _cameraService?.setColorLiftDebounced(values);
-  }
-
-  /// Set color lift (shadows) - final value
-  void setColorLiftFinal(ColorWheelValues values) {
-    _state = _state.copyWith(
-      colorCorrection: _state.colorCorrection.copyWith(lift: values),
-    );
-    notifyListeners();
-    _cameraService?.setColorLift(values);
-  }
-
-  /// Set color gamma (midtones) - debounced
-  void setColorGammaDebounced(ColorWheelValues values) {
-    _cameraService?.setColorGammaDebounced(values);
-  }
-
-  /// Set color gamma (midtones) - final value
-  void setColorGammaFinal(ColorWheelValues values) {
-    _state = _state.copyWith(
-      colorCorrection: _state.colorCorrection.copyWith(gamma: values),
-    );
-    notifyListeners();
-    _cameraService?.setColorGamma(values);
-  }
-
-  /// Set color gain (highlights) - debounced
-  void setColorGainDebounced(ColorWheelValues values) {
-    _cameraService?.setColorGainDebounced(values);
-  }
-
-  /// Set color gain (highlights) - final value
-  void setColorGainFinal(ColorWheelValues values) {
-    _state = _state.copyWith(
-      colorCorrection: _state.colorCorrection.copyWith(gain: values),
-    );
-    notifyListeners();
-    _cameraService?.setColorGain(values);
-  }
-
-  /// Set saturation
-  void setColorSaturation(double value) {
-    _state = _state.copyWith(
-      colorCorrection: _state.colorCorrection.copyWith(saturation: value),
-    );
-    notifyListeners();
-    _cameraService?.setColorSaturation(value).catchError((e) {
-      _error = 'Failed to set saturation: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set contrast
-  void setColorContrast(double value) {
-    _state = _state.copyWith(
-      colorCorrection: _state.colorCorrection.copyWith(contrast: value),
-    );
-    notifyListeners();
-    _cameraService?.setColorContrast(value).catchError((e) {
-      _error = 'Failed to set contrast: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Set hue
-  void setColorHue(double value) {
-    _state = _state.copyWith(
-      colorCorrection: _state.colorCorrection.copyWith(hue: value),
-    );
-    notifyListeners();
-    _cameraService?.setColorHue(value).catchError((e) {
-      _error = 'Failed to set hue: $e';
-      notifyListeners();
-    });
-  }
-
-  /// Reset all color correction to default
-  void resetColorCorrection() {
-    _state = _state.copyWith(
-      colorCorrection: _state.colorCorrection.reset(),
-    );
-    notifyListeners();
-    // Reset each component with correct defaults
-    // Lift and Gamma use 0.0 (additive), Gain uses 1.0 (multiplicative)
-    _cameraService?.setColorLift(ColorWheelValues.liftGammaDefault);
-    _cameraService?.setColorGamma(ColorWheelValues.liftGammaDefault);
-    _cameraService?.setColorGain(ColorWheelValues.gainDefault);
-    // Note: saturation, contrast, hue, lumaMix endpoints not supported by camera API
-  }
-
-  void _cleanup() {
-    for (final sub in _subscriptions) {
-      sub.cancel();
-    }
+  void setShutterSpeed(int value) => _videoController.setShutterSpeed(value);
+  void setShutterAutoExposure(bool enabled) => _videoController.setShutterAutoExposure(enabled);
+  void toggleShutterAuto() => _videoController.toggleShutterAuto();
+  void setWhiteBalance(int kelvin) => _videoController.setWhiteBalance(kelvin);
+  void setWhiteBalanceTint(int tint) => _videoController.setWhiteBalanceTint(tint);
+
+  // ========== TRANSPORT CONTROLS (delegated) ==========
+  Future<void> startRecording() => _transportController.startRecording();
+  Future<void> stopRecording() => _transportController.stopRecording();
+  Future<void> toggleRecording() => _transportController.toggleRecording();
+
+  // ========== SLATE CONTROLS (delegated) ==========
+  void setSlateScene(String scene) => _slateController.setScene(scene);
+  void setSlateTake(int take) => _slateController.setTake(take);
+  void incrementSlateTake() => _slateController.incrementTake();
+  void setSlateGoodTake(bool goodTake) => _slateController.setGoodTake(goodTake);
+  void setSlateShotType(ShotType? shotType) => _slateController.setShotType(shotType);
+  void setSlateLocation(SceneLocation? location) => _slateController.setLocation(location);
+  void setSlateTime(SceneTime? time) => _slateController.setTime(time);
+  void resetSlate() => _slateController.reset();
+  Future<void> refreshSlate() => _slateController.refresh();
+
+  // ========== AUDIO CONTROLS (delegated) ==========
+  Future<void> refreshAudio() => _audioController.refresh();
+  void setAudioInput(int channelIndex, AudioInputType type) => _audioController.setInput(channelIndex, type);
+  void setPhantomPower(int channelIndex, bool enabled) => _audioController.setPhantomPower(channelIndex, enabled);
+  void setAudioGainDebounced(int channelIndex, double normalizedValue) => _audioController.setGainDebounced(channelIndex, normalizedValue);
+  void setAudioGainFinal(int channelIndex, double normalizedValue) => _audioController.setGainFinal(channelIndex, normalizedValue);
+  void setLowCutFilter(int channelIndex, bool enabled) => _audioController.setLowCutFilter(channelIndex, enabled);
+  void setAudioPadding(int channelIndex, bool enabled) => _audioController.setPadding(channelIndex, enabled);
+
+  // ========== MEDIA CONTROLS (delegated) ==========
+  Future<void> refreshMedia() => _mediaController.refresh();
+  Future<void> formatDevice(String deviceName, FilesystemType filesystem) => _mediaController.formatDevice(deviceName, filesystem);
+
+  // ========== MONITORING CONTROLS (delegated) ==========
+  Future<void> refreshMonitoring() => _monitoringController.refresh();
+  void selectDisplay(String displayName) => _monitoringController.selectDisplay(displayName);
+  void setFocusAssist(FocusAssistState focusAssist) => _monitoringController.setFocusAssist(focusAssist);
+  void setZebraEnabled(bool enabled) => _monitoringController.setZebraEnabled(enabled);
+  void setFrameGuides(FrameGuidesState frameGuides) => _monitoringController.setFrameGuides(frameGuides);
+  void setCleanFeedEnabled(bool enabled) => _monitoringController.setCleanFeedEnabled(enabled);
+  void setDisplayLutEnabled(bool enabled) => _monitoringController.setDisplayLutEnabled(enabled);
+  void setProgramFeedEnabled(bool enabled) => _monitoringController.setProgramFeedEnabled(enabled);
+  void setVideoFormat(String name, String frameRate) => _monitoringController.setVideoFormat(name, frameRate);
+
+  // ========== COLOR CORRECTION CONTROLS (delegated) ==========
+  Future<void> refreshColorCorrection() => _colorController.refresh();
+  void setColorLiftDebounced(ColorWheelValues values) => _colorController.setLiftDebounced(values);
+  void setColorLiftFinal(ColorWheelValues values) => _colorController.setLiftFinal(values);
+  void setColorGammaDebounced(ColorWheelValues values) => _colorController.setGammaDebounced(values);
+  void setColorGammaFinal(ColorWheelValues values) => _colorController.setGammaFinal(values);
+  void setColorGainDebounced(ColorWheelValues values) => _colorController.setGainDebounced(values);
+  void setColorGainFinal(ColorWheelValues values) => _colorController.setGainFinal(values);
+  void setColorSaturation(double value) => _colorController.setSaturation(value);
+  void setColorContrast(double value) => _colorController.setContrast(value);
+  void setColorHue(double value) => _colorController.setHue(value);
+  void resetColorCorrection() => _colorController.reset();
+
+  Future<void> _cleanup() async {
+    // Await all subscription cancellations
+    await Future.wait(_subscriptions.map((sub) => sub.cancel()));
     _subscriptions.clear();
   }
 
   @override
   void dispose() {
-    _cleanup();
+    // Note: dispose() can't be async, but we still clean up synchronously
+    // The subscriptions will be cancelled, though not awaited
+    for (final sub in _subscriptions) {
+      sub.cancel();
+    }
+    _subscriptions.clear();
     super.dispose();
   }
 }
