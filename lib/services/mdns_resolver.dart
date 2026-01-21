@@ -1,41 +1,33 @@
-import 'package:multicast_dns/multicast_dns.dart';
+import 'dart:io';
 
-/// Resolves mDNS (.local) hostnames to IP addresses
+/// Resolves hostnames (including mDNS .local) to IP addresses
+/// Uses the system's DNS resolver which includes mDNS via avahi/nsswitch
 class MdnsResolver {
   MdnsResolver._();
 
   /// Resolve a hostname to an IP address
-  /// If it's a .local hostname, uses mDNS resolution
-  /// Otherwise returns the hostname as-is (assuming it's an IP or regular DNS)
+  /// Uses system DNS resolver (supports mDNS via avahi on Linux)
   static Future<String> resolve(String hostname) async {
-    if (!hostname.endsWith('.local')) {
+    // If it looks like an IP address, return as-is
+    if (_isIpAddress(hostname)) {
       return hostname;
     }
 
-    final client = MDnsClient();
     try {
-      await client.start();
-
-      // Query for A records (IPv4)
-      final query = ResourceRecordQuery.addressIPv4(hostname);
-
-      await for (final record in client.lookup<IPAddressResourceRecord>(query)) {
-        final ip = record.address.address;
-        client.stop();
-        return ip;
+      final results = await InternetAddress.lookup(hostname);
+      if (results.isNotEmpty) {
+        // Prefer IPv4
+        for (final result in results) {
+          if (result.type == InternetAddressType.IPv4) {
+            return result.address;
+          }
+        }
+        // Fall back to first result
+        return results.first.address;
       }
-
-      // If no IPv4, try IPv6
-      final queryV6 = ResourceRecordQuery.addressIPv6(hostname);
-      await for (final record in client.lookup<IPAddressResourceRecord>(queryV6)) {
-        final ip = record.address.address;
-        client.stop();
-        return ip;
-      }
-
-      throw MdnsResolutionException('Could not resolve $hostname via mDNS');
-    } finally {
-      client.stop();
+      throw MdnsResolutionException('No addresses found for $hostname');
+    } on SocketException catch (e) {
+      throw MdnsResolutionException('Could not resolve $hostname: ${e.message}');
     }
   }
 
@@ -44,16 +36,20 @@ class MdnsResolver {
     String hostname, {
     Duration timeout = const Duration(seconds: 5),
   }) async {
-    if (!hostname.endsWith('.local')) {
+    if (_isIpAddress(hostname)) {
       return hostname;
     }
 
     return resolve(hostname).timeout(
       timeout,
       onTimeout: () => throw MdnsResolutionException(
-        'mDNS resolution timed out for $hostname',
+        'DNS resolution timed out for $hostname',
       ),
     );
+  }
+
+  static bool _isIpAddress(String hostname) {
+    return InternetAddress.tryParse(hostname) != null;
   }
 }
 

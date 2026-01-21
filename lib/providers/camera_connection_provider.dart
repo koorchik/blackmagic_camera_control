@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/discovered_camera.dart';
+import '../services/camera_discovery_service.dart';
 import '../services/camera_service.dart';
 import '../services/mdns_resolver.dart';
 import '../utils/constants.dart';
@@ -11,21 +13,42 @@ enum ConnectionStatus {
   error,
 }
 
+enum DiscoveryStatus {
+  idle,
+  discovering,
+  completed,
+  error,
+}
+
 class CameraConnectionProvider extends ChangeNotifier {
   CameraConnectionProvider();
 
+  // Connection state
   ConnectionStatus _status = ConnectionStatus.disconnected;
   String _cameraHost = '';
   String _resolvedIp = '';
   String _errorMessage = '';
   CameraService? _cameraService;
 
+  // Discovery state
+  DiscoveryStatus _discoveryStatus = DiscoveryStatus.idle;
+  List<DiscoveredCamera> _discoveredCameras = [];
+  String _discoveryErrorMessage = '';
+  CameraDiscoveryService? _discoveryService;
+
+  // Connection getters
   ConnectionStatus get status => _status;
   String get cameraIp => _cameraHost;
   String get resolvedIp => _resolvedIp;
   String get errorMessage => _errorMessage;
   CameraService? get cameraService => _cameraService;
   bool get isConnected => _status == ConnectionStatus.connected;
+
+  // Discovery getters
+  DiscoveryStatus get discoveryStatus => _discoveryStatus;
+  List<DiscoveredCamera> get discoveredCameras => List.unmodifiable(_discoveredCameras);
+  String get discoveryErrorMessage => _discoveryErrorMessage;
+  bool get isDiscovering => _discoveryStatus == DiscoveryStatus.discovering;
 
   /// Load the last used camera IP from preferences
   Future<void> loadSavedIp() async {
@@ -98,8 +121,63 @@ class CameraConnectionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ========== DISCOVERY METHODS ==========
+
+  /// Start discovering cameras on the network
+  Future<void> startDiscovery() async {
+    if (_discoveryStatus == DiscoveryStatus.discovering) {
+      return;
+    }
+
+    _discoveryStatus = DiscoveryStatus.discovering;
+    _discoveredCameras = [];
+    _discoveryErrorMessage = '';
+    notifyListeners();
+
+    try {
+      _discoveryService = CameraDiscoveryService();
+      final cameras = await _discoveryService!.discoverCameras();
+
+      _discoveredCameras = cameras;
+      _discoveryStatus = DiscoveryStatus.completed;
+      notifyListeners();
+    } catch (e) {
+      _setDiscoveryError('Discovery failed: $e');
+    } finally {
+      _discoveryService?.dispose();
+      _discoveryService = null;
+    }
+  }
+
+  /// Stop the current discovery operation
+  void stopDiscovery() {
+    _discoveryService?.stopDiscovery();
+    _discoveryService?.dispose();
+    _discoveryService = null;
+
+    if (_discoveryStatus == DiscoveryStatus.discovering) {
+      _discoveryStatus = DiscoveryStatus.completed;
+      notifyListeners();
+    }
+  }
+
+  /// Connect to a discovered camera
+  Future<bool> connectToDiscoveredCamera(DiscoveredCamera camera) async {
+    stopDiscovery();
+    return connect(camera.connectionAddress);
+  }
+
+  void _setDiscoveryError(String message) {
+    _discoveryStatus = DiscoveryStatus.error;
+    _discoveryErrorMessage = message;
+    _discoveryService?.dispose();
+    _discoveryService = null;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
+    stopDiscovery();
     _cameraService?.dispose();
     super.dispose();
   }

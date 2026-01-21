@@ -1,357 +1,145 @@
-Here is the structured REST API documentation for your Android/Desktop app development, based on the provided Blackmagic Camera API PDF.
+Here is the unified and logically structured documentation for your Android/Desktop application. This guide consolidates all endpoints into functional groups (Control, Workflow, System) and integrates the WebSocket notification logic for a complete developer reference.
 
-### **General Information**
+### **1. General Configuration**
 
 - **Protocol:** HTTP / REST
 - **Format:** JSON
 - **Base URL:** `https://<camera-ip-address>/control/api/v1`
-- _Note:_ You must enable "Web media manager" in the camera's network settings for this to work .
-
-- **Authentication:** Not strictly specified for local control, but ensure the connection uses HTTPS as per the example URLs .
+- **Prerequisites:**
+- Enable **"Web media manager"** in the camera's _Blackmagic Camera Setup_ > _Network Access_ settings.
+- **HTTPS:** The connection should use HTTPS. Certificates may be self-signed on local networks.
 
 ---
 
-### **1. Lens Control (Focus, Aperture, Zoom)**
+### **2. Camera Control API (Optics & Image)**
 
-This is the core functionality you requested.
+This section covers the physical manipulation of the camera lens and sensor parameters.
 
-#### **1.1. Focus Control**
+#### **2.1. Lens Control**
 
-- **Get Current Focus:**
-- **GET** `/lens/focus`
-- **Response:**
+| Feature          | Method    | Endpoint                  | Payload / Description                                       |
+| ---------------- | --------- | ------------------------- | ----------------------------------------------------------- |
+| **Get Focus**    | `GET`     | `/lens/focus`             | Returns `{"normalised": 0.5}` (0.0=Near, 1.0=Infinity)      |
+| **Set Focus**    | `PUT`     | `/lens/focus`             | Body: `{"normalised": 0.6}`                                 |
+| **Auto Focus**   | `PUT`     | `/lens/focus/doAutoFocus` | Body: `{"position": {"x": 0.5, "y": 0.5}}` (Center trigger) |
+| **Get Aperture** | `GET`     | `/lens/iris`              | Returns `{"apertureStop": 5.6, "normalised": 0.4}`          |
+| **Set Aperture** | `PUT`     | `/lens/iris`              | Body: `{"apertureStop": 4.0}` OR `{"normalised": 0.5}`      |
+| **Zoom**         | `GET/PUT` | `/lens/zoom`              | Body: `{"focalLength": 50}` or `{"normalised": 0.5}`        |
+
+#### **2.2. Exposure & Sensor**
+
+| Feature           | Method    | Endpoint                     | Payload / Description                                             |
+| ----------------- | --------- | ---------------------------- | ----------------------------------------------------------------- |
+| **Shutter**       | `GET`     | `/video/shutter`             | Returns `{"shutterSpeed": 50, "shutterAngle": 180.0}`             |
+| **Set Shutter**   | `PUT`     | `/video/shutter`             | Body: `{"shutterSpeed": 100}` OR `{"shutterAngle": 172.8}`        |
+| **ISO**           | `GET`     | `/video/iso`                 | Returns `{"iso": 400}`                                            |
+| **Set ISO**       | `PUT`     | `/video/iso`                 | Body: `{"iso": 800}` (Use `/video/supportedISOs` for valid list)  |
+| **White Balance** | `GET/PUT` | `/video/whiteBalance`        | Body: `{"whiteBalance": 5600}` (Kelvin)                           |
+| **Auto WB**       | `PUT`     | `/video/whiteBalance/doAuto` | Triggers Auto White Balance calculation                           |
+| **ND Filter**     | `GET/PUT` | `/video/ndFilter`            | Body: `{"stop": 2.0}` (Valid stops: 0.0, 2.0, 4.0, 6.0 typically) |
+
+#### **2.3. Color Correction**
+
+Direct control over the camera's internal color processing (similar to CCU).
+
+- **Endpoints:** `/colorCorrection/lift`, `/colorCorrection/gamma`, `/colorCorrection/gain`
+- **Body Example (Lift):**
 
 ```json
 {
-  "normalised": 0.5 // Value between 0.0 (near) and 1.0 (infinity)
+  "red": -0.1,
+  "green": -0.1,
+  "blue": -0.1,
+  "luma": -0.1
 }
 ```
 
-- **Set Focus (Manual Focus):**
-- **PUT** `/lens/focus`
-- **Body:**
+---
+
+### **3. Production Workflow API (Media & Metadata)**
+
+These functions are essential for the "Remote Assistant" aspect of your app, handling recording, metadata, and storage.
+
+#### **3.1. Transport Control**
+
+- **Status:** `GET /transports/0/record` → `{"recording": true}`
+- **Timecode:** `GET /transports/0/timecode` → `{"display": "01:00:00:00"}`
+- **Action:**
+- **Start:** `POST /transports/0/record` with body `{"clipName": "Scene_1"}` (Optional name).
+- **Stop:** `POST /transports/0/stop`.
+
+#### **3.2. Smart Slate (Metadata)**
+
+Manage metadata for the _next_ clip to be recorded.
+
+- **Endpoint:** `/slates/nextClip`
+- **Method:** `GET` (Read current), `PUT` (Update)
+- **Body (Update):**
 
 ```json
 {
-  "normalised": 0.6 // Set value 0.0 to 1.0
-}
-```
-
-- **Trigger Autofocus:**
-- **PUT** `/lens/focus/doAutoFocus`
-- **Body:** (Specify the Region of Interest)
-
-```json
-{
-  "position": {
-    "x": 0.5, // Horizontal center (0.0 - 1.0)
-    "y": 0.5 // Vertical center (0.0 - 1.0)
+  "clip": {
+    "scene": "1A",
+    "take": 2, // Increment this via a "+1" button in your app
+    "goodTake": true, // Tags clip as "Good" in metadata
+    "shotType": "WS" // Options: WS, MS, MCU, CU, BCU, ECU
   }
 }
 ```
 
-#### **1.2. Aperture (Iris)**
+#### **3.3. Media Management**
 
-- **Get Current Aperture:**
-- **GET** `/lens/iris`
-- **Response:**
+- **Check Storage:** `GET /media/workingset`
+- **Response:** Returns array including `remainingRecordTime` (seconds) and `remainingSpace` (bytes). **Crucial** for "Card Full" warnings.
 
-```json
-{
-  "apertureStop": 5.6, // The actual f-stop (e.g., f/5.6)
-  "normalised": 0.4, // 0.0 (closed) to 1.0 (open)
-  "apertureNumber": 560, // Internal integer representation
-  "continuousApertureAutoExposure": false // Is Auto Exposure active?
-}
-```
+- **Format Card:**
 
-- **Set Aperture:**
-- **PUT** `/lens/iris`
-- **Body:** (Send one of the following)
-
-```json
-{
-  "apertureStop": 4.0 // Set to f/4.0
-}
-```
-
-_Or using normalised values:_
-
-```json
-{
-  "normalised": 0.5 //
-}
-```
-
-#### **1.3. Zoom Control**
-
-- **Get/Set Zoom:**
-- **GET/PUT** `/lens/zoom`
-- **Body:** Use `"focalLength"` (mm) or `"normalised"` (0.0-1.0) .
+1. `GET /media/devices/{name}/doformat` (Get protection key).
+2. `PUT /media/devices/{name}/doformat` (Send key + filesystem + volume name).
 
 ---
 
-### **2. Video & Exposure Control**
+### **4. System & Monitoring API**
 
-Controls for Shutter Speed, ISO, and White Balance.
+Tools to assist the camera operator and monitor system health.
 
-#### **2.1. Shutter Speed / Angle**
+#### **4.1. Monitoring Overlays**
 
-Cameras may operate in Shutter Speed or Shutter Angle mode.
+Control what appears on the camera's LCD/HDMI out.
 
-- **Get Current Shutter:**
-- **GET** `/video/shutter`
-- **Response:**
+- **Focus Peaking:** `PUT /monitoring/{displayName}/focusAssist`
+- Body: `{"enabled": true, "mode": "Peak", "color": "Red"}`
 
-```json
-{
-  "shutterSpeed": 50, // 1/50th of a second
-  "shutterAngle": 180.0, // 180 degrees
-  "continuousShutterAutoExposure": false //
-}
-```
+- **Zebra:** `PUT /monitoring/{displayName}/zebra` → `{"enabled": true}`
+- **Frame Guides:** `PUT /monitoring/{displayName}/frameGuide` → `{"enabled": true}`
+- _Note:_ Get valid `{displayName}` (e.g., "LCD") via `GET /monitoring/display`.
 
-- **Set Shutter:**
-- **PUT** `/video/shutter`
-- **Body:**
+#### **4.2. Audio Control**
 
-```json
-{
-  "shutterSpeed": 100 // Set to 1/100th second
-}
-```
+- **Levels (VU):** `GET /audio/channel/{index}/level` → `{"normalised": 0.8, "gain": -6.0}`.
+- **Input Source:** `PUT /audio/channel/{index}/input` → `{"input": "Mic"}` (or "Line").
+- **Phantom Power:** `PUT /audio/channel/{index}/phantomPower` → `{"enabled": true}`.
 
-_Or:_
+#### **4.3. System Format**
 
-```json
-{
-  "shutterAngle": 172.8 //
-}
-```
-
-#### **2.2. ISO (or Gain)**
-
-- **Get ISO:**
-- **GET** `/video/iso`
-- **Response:** `{"iso": 400}`
-
-- **Set ISO:**
-- **PUT** `/video/iso`
-- **Body:** `{"iso": 800}`
-
-- **Get Supported ISOs:**
-- **GET** `/video/supportedISOs`
-- _Use this to populate a dropdown menu in your app so users select valid values._
-
-#### **2.3. White Balance**
-
-- **Get/Set White Balance:**
-- **GET/PUT** `/video/whiteBalance`
-- **Body:** `{"whiteBalance": 5600}` (Kelvin) .
-
-- **Trigger Auto White Balance:**
-- **PUT** `/video/whiteBalance/doAuto` .
-
-#### **2.4. ND Filter (If supported)**
-
-- **Get/Set ND Filter:**
-- **GET/PUT** `/video/ndFilter`
-- **Body:** `{"stop": 2.0}` (e.g., 0.0, 2.0, 4.0, 6.0) .
+- **Get Format:** `GET /system/format`
+- Returns Codec (e.g., "Blackmagic RAW"), Resolution (`6144x3456`), and Frame Rate (`24.00`).
 
 ---
 
-### **3. Transport Control (Recording)**
+### **5. Real-Time Notification API (WebSocket)**
 
-- **Get Recording Status:**
-- **GET** `/transports/0/record`
-- **Response:** `{"recording": true}` (true = recording, false = stopped) .
+Use this for high-performance UI updates (Focus wheels, VU meters, Tally) instead of polling.
 
-- **Start/Stop Recording:**
-- **POST** `/transports/0/record`
-- **Body:**
+- **URL:** `ws://<camera-ip>/control/api/v1/notification`
 
-```json
-{
-  "recording": true, // Start recording (deprecated method uses this param)
-  // OR strictly for POST use:
-  "clipName": "Optional_Clip_Name" //
-}
-```
+#### **5.1. Connection Flow**
 
-- _Note:_ The documentation mentions `POST` to start recording and `POST /transports/0/stop` to stop .
+1. **Connect:** Open WebSocket.
+2. **Handshake:** Receive `{"type": "event", "data": {"action": "websocketOpened"}}`.
+3. **Subscribe:** Send a JSON message specifying which REST paths to watch.
 
-- **Stop Recording:**
-- **POST** `/transports/0/stop` .
-
-- **Get Timecode:**
-- **GET** `/transports/0/timecode`
-- **Response:** `{"display": "00:01:23:10"}` .
-
----
-
-### **4. System Information**
-
-- **Get Recording Format:**
-- **GET** `/system/format`
-- **Response:**
-
-```json
-{
-  "codec": "Blackmagic RAW", //
-  "frameRate": "24.00", //
-  "recordResolution": {
-    "width": 6144,
-    "height": 3456 //
-  }
-}
-```
-
----
-
-### **App Architecture Recommendations**
-
-1. **State Management (Polling vs. WebSocket):**
-
-- **WebSocket:** For the best user experience (especially for manual focus wheels), use the notification service mentioned in the docs.
-- **WebSocket URL:** `ws://<camera-ip>/control/api/v1/notification`. You can subscribe to specific events like `/lens/focus` or `/video/iso` to get real-time updates without polling .
-
-2. **Handling 404/400 Errors:**
-
-- **404 Not Found:** Usually means the camera model doesn't support that feature (e.g., trying to control ND filters on a camera that doesn't have them) .
-- **400 Bad Request:** You sent an invalid value (e.g., a Shutter Speed that isn't supported) .
-
-Based on the provided documentation, the **Notification Websocket API** allows your application to maintain a persistent connection with the camera to receive real-time updates when settings change (e.g., someone rotates the focus ring manually, or the recording stops). This is far more efficient than constantly polling the REST API.
-
-Here is the detailed description of the Notification API flow and data structures.
-
-### **1. Connection & Handshake**
-
-The WebSocket service is designed to notify subscribers of device state changes.
-
-- **Discovery:** You can use the REST endpoint `GET /event/list` to retrieve the list of events that can be subscribed to via the WebSocket.
-
-- **Connection:** When you open a WebSocket connection to the camera, the server will immediately send a **Websocket Opened Message** to confirm the connection is active.
-
-**Server Greeting (JSON):**
-
-```json
-{
-  "type": "event",
-  "data": {
-    "action": "websocketOpened"
-  }
-}
-```
-
----
-
-### **2. Client Commands (Publishing)**
-
-Once connected, the client (your app) sends messages to the server to manage subscriptions. These are standard JSON objects.
-
-#### **A. Subscribe**
-
-To start receiving updates, you must explicitly subscribe to specific properties (paths).
-
-**Request Structure:**
-
-```json
-{
-  "action": "subscribe",
-  "properties": ["/video/iso", "/lens/focus", "/transports/0/record"]
-}
-```
-
-- **action:** Must be `"subscribe"`.
-
-- **properties:** An array of strings representing the REST endpoints you want to monitor. You can subscribe to specific paths or use wildcards (though specific paths are recommended for clarity).
-
-#### **B. Other Commands**
-
-- **Unsubscribe:** Stop receiving updates for specific properties. Action: `"unsubscribe"`.
-
-- **List Subscriptions:** Ask the server what you are currently subscribed to. Action: `"listSubscriptions"`.
-
-- **List Properties:** Ask the server what properties are available. Action: `"listProperties"`.
-
----
-
-### **3. Server Notifications (Events)**
-
-When a subscribed property changes on the camera, the server sends an **Event Message** to the client.
-
-**Event Structure:**
-
-```json
-{
-  "type": "event",
-  "data": {
-    "action": "propertyValueChanged",
-    "property": "/video/iso",
-    "value": {
-      "iso": 800
-    }
-  }
-}
-```
-
-- **type:** Always `"event"`.
-
-- **data.action:** Always `"propertyValueChanged"`.
-
-- **data.property:** The specific API path that changed (e.g., `/video/iso`).
-
-- **data.value:** The new value object, identical to the JSON body you would get from a standard GET request to that endpoint.
-
----
-
-### **4. Critical Subscribable Properties**
-
-For your Android/Desktop app goals (Focus, Shutter, Aperture), you should subscribe to the following properties. I have mapped the path to the expected event payload based on the "Device Properties" section of the document.
-
-#### **A. Lens & Focus (The "Main Goal")**
-
-- **Focus:** `/lens/focus`
-- **Payload:** `{"normalised": 0.5}`.
-
-- _Use:_ Update your focus slider in real-time if the user adjusts the lens manually.
-
-- **Aperture (Iris):** `/lens/iris`
-- **Payload:** `{"apertureStop": 5.6, "normalised": 0.4, ...}`.
-
-- **Zoom:** `/lens/zoom`
-- **Payload:** `{"focalLength": 50, "normalised": 0.5}`.
-
-#### **B. Exposure Parameters**
-
-- **Shutter:** `/video/shutter`
-- **Payload:** Returns shutter speed or angle depending on camera mode.
-- Example: `{"shutterSpeed": 50, "shutterAngle": 180.0, ...}`.
-
-- **ISO:** `/video/iso`
-- **Payload:** `{"iso": 800}`.
-
-- **White Balance:** `/video/whiteBalance`
-- **Payload:** `{"whiteBalance": 5600}`.
-
-#### **C. Transport (Recording State)**
-
-- **Record Status:** `/transports/0/record`
-- **Payload:** `{"recording": true}` or `{"recording": false}`.
-
-- _Use:_ Change your "REC" button color immediately when recording starts/stops.
-
-- **Timecode:** `/transports/0/timecode`
-- **Payload:** `{"display": "01:00:00:00", ...}`.
-
-- _Note:_ Subscribing to timecode generates high network traffic (updates every frame). Use cautiously on mobile networks.
-
-### **5. Implementation Summary**
-
-1. **Open WebSocket** connection to `ws://<camera-ip>/control/api/v1/notification` (Standard endpoint convention, though the doc primarily lists the REST path structure).
-2. Wait for the `{"action": "websocketOpened"}` message.
-
-3. **Send Subscribe Payload:**
+#### **5.2. Subscription Command**
 
 ```json
 {
@@ -359,11 +147,41 @@ For your Android/Desktop app goals (Focus, Shutter, Aperture), you should subscr
   "properties": [
     "/lens/focus",
     "/lens/iris",
-    "/video/shutter",
     "/video/iso",
-    "/transports/0/record"
+    "/video/shutter",
+    "/transports/0/record",
+    "/audio/channel/0/level",
+    "/media/workingset"
   ]
 }
 ```
 
-4. **Listen** for `propertyValueChanged` messages and update your Android `ViewModel` or UI State accordingly.
+#### **5.3. Event Message Structure**
+
+When a setting changes, the camera sends:
+
+```json
+{
+  "type": "event",
+  "data": {
+    "action": "propertyValueChanged",
+    "property": "/lens/focus",
+    "value": {
+      "normalised": 0.65
+    }
+  }
+}
+```
+
+- **Handling:** Parse `data.property` to identify _what_ changed, and apply `data.value` to your UI component immediately.
+
+---
+
+### **6. App Architecture & Best Practices**
+
+- **Hybrid Approach:** Use **REST (GET/PUT)** for initial setup and user actions (button clicks), and **WebSocket** for listening to state changes. This ensures your UI never falls out of sync if the camera is adjusted physically.
+- **Error Handling:**
+- **404:** Feature not supported (e.g., ND filter on a camera without one). Hide this UI element.
+- **400:** Invalid value. Revert UI to the last known good value.
+
+- **Discovery:** Use **mDNS** (Service type `_http._tcp.`) to auto-discover cameras on the LAN instead of asking users to type IP addresses. Look for devices named `*.local` (e.g., `ursa-broadcast-g2.local`).

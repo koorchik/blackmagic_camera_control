@@ -28,6 +28,7 @@ class ApiEndpoints {
 
   // System endpoints
   static const String system = '/control/api/v1/system';
+  static const String systemProduct = '/control/api/v1/system/product';
 
   // WebSocket endpoint
   static String webSocket(String host, [int port = defaultPort]) =>
@@ -48,4 +49,29 @@ class Durations {
   static const Duration sliderDebounce = Duration(milliseconds: 50);
   static const Duration connectionTimeout = Duration(seconds: 5);
   static const Duration websocketReconnect = Duration(seconds: 3);
+}
+
+/// Discovery constants for camera autodiscovery
+class DiscoveryConstants {
+  DiscoveryConstants._();
+
+  /// Timeout for the entire discovery operation
+  static const Duration discoveryTimeout = Duration(seconds: 15);
+
+  /// Timeout for validating individual cameras
+  static const Duration validationTimeout = Duration(seconds: 2);
+
+  /// Known default mDNS hostnames for Blackmagic cameras
+  static const List<String> knownCameraHostnames = [
+    'micro-studio-camera-4k-g2.local',
+    'studio-camera-4k-pro.local',
+    'studio-camera-4k-pro-g2.local',
+    'studio-camera-4k-plus.local',
+    'studio-camera-4k-plus-g2.local',
+    'studio-camera-6k-pro.local',
+    'ursa-broadcast-g2.local',
+    'cinema-camera-6k.local',
+    'pyxis-6k.local',
+    'ursa-cine-12k-lf.local',
+  ];
 }

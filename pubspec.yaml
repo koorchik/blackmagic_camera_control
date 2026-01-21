@@ -36,7 +36,6 @@ dependencies:
   http: ^1.2.2
   web_socket_channel: ^3.0.1
   shared_preferences: ^2.3.3
-  multicast_dns: ^0.3.2+9
 
 dev_dependencies:
   flutter_test:
