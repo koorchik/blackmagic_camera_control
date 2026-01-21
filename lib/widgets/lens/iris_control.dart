@@ -12,10 +12,14 @@ class IrisControl extends StatefulWidget {
 class _IrisControlState extends State<IrisControl> {
   double? _draggingValue;
 
+  // Standard f-stop scale (full stops)
+  static const List<double> _fStops = [1.4, 2.0, 2.8, 4.0, 5.6, 8.0, 11, 16, 22];
+
   String _getApertureDisplay(double normalized) {
-    const fStops = [1.4, 2.0, 2.8, 4.0, 5.6, 8.0, 11, 16, 22];
-    final index = (normalized * (fStops.length - 1)).round().clamp(0, fStops.length - 1);
-    return 'f/${fStops[index]}';
+    final index = (normalized * (_fStops.length - 1)).round().clamp(0, _fStops.length - 1);
+    final fStop = _fStops[index];
+    // Format nicely: show decimal only if needed
+    return fStop == fStop.roundToDouble() ? 'f/${fStop.toInt()}' : 'f/$fStop';
   }
 
   @override
@@ -47,29 +51,44 @@ class _IrisControlState extends State<IrisControl> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(Icons.camera, size: 16),
-                const SizedBox(width: 4),
-                const Text('Open'),
-                Expanded(
-                  child: Slider(
-                    value: displayValue,
-                    onChanged: (value) {
-                      setState(() => _draggingValue = value);
-                      cameraState.setIrisDebounced(value);
-                    },
-                    onChangeEnd: (value) {
-                      setState(() => _draggingValue = null);
-                      cameraState.setIrisFinal(value);
-                    },
-                  ),
-                ),
-                const Text('Close'),
-                const SizedBox(width: 4),
-                const Icon(Icons.camera, size: 12),
-              ],
+            const SizedBox(height: 8),
+            // Slider with discrete divisions
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                showValueIndicator: ShowValueIndicator.onlyForDiscrete,
+              ),
+              child: Slider(
+                value: displayValue,
+                divisions: _fStops.length - 1,
+                label: _getApertureDisplay(displayValue),
+                onChanged: (value) {
+                  setState(() => _draggingValue = value);
+                  cameraState.setIrisDebounced(value);
+                },
+                onChangeEnd: (value) {
+                  setState(() => _draggingValue = null);
+                  cameraState.setIrisFinal(value);
+                },
+              ),
+            ),
+            // F-stop scale labels
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: _fStops.map((fStop) {
+                  final label = fStop == fStop.roundToDouble()
+                      ? '${fStop.toInt()}'
+                      : '$fStop';
+                  return Text(
+                    label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 10,
+                        ),
+                  );
+                }).toList(),
+              ),
             ),
           ],
         ),
