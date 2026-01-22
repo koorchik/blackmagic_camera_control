@@ -10,6 +10,7 @@ import '../widgets/monitoring/clean_feed_control.dart';
 import '../widgets/monitoring/display_lut_control.dart';
 import '../widgets/monitoring/program_feed_control.dart';
 import '../widgets/monitoring/video_format_selector.dart';
+import '../widgets/monitoring/codec_format_selector.dart';
 
 class MonitoringScreen extends StatefulWidget {
   const MonitoringScreen({super.key});
@@ -181,6 +182,8 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
         const ProgramFeedControl(),
         const SizedBox(height: 8),
         const VideoFormatSelector(),
+        const SizedBox(height: 8),
+        const CodecFormatSelector(),
       ],
     );
   }

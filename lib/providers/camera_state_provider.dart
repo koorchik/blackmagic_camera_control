@@ -321,6 +321,7 @@ class CameraStateProvider extends ChangeNotifier {
   void setDisplayLutEnabled(bool enabled) => _monitoringController.setDisplayLutEnabled(enabled);
   void setProgramFeedEnabled(bool enabled) => _monitoringController.setProgramFeedEnabled(enabled);
   void setVideoFormat(String name, String frameRate) => _monitoringController.setVideoFormat(name, frameRate);
+  void setCodecFormat(String codec, String container) => _monitoringController.setCodecFormat(codec, container);
 
   // ========== COLOR CORRECTION CONTROLS (delegated) ==========
   Future<void> refreshColorCorrection() => _colorController.refresh();

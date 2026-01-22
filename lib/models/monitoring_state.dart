@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'camera_capabilities.dart';
 
 /// Focus assist mode
 enum FocusAssistMode {
@@ -347,6 +348,7 @@ class MonitoringState {
     this.displays = const {},
     this.programFeedEnabled = false,
     this.currentVideoFormat,
+    this.currentCodecFormat,
     this.currentFrameGuideRatio = FrameGuideRatio.ratio16x9,
     this.globalFocusAssistSettings = const FocusAssistState(),
   });
@@ -365,6 +367,9 @@ class MonitoringState {
 
   /// Current video format (e.g., "4K DCI 23.98p")
   final String? currentVideoFormat;
+
+  /// Current codec format (e.g., ProRes 422 HQ)
+  final CodecFormat? currentCodecFormat;
 
   /// Current frame guide ratio (camera-wide setting)
   final FrameGuideRatio currentFrameGuideRatio;
@@ -386,6 +391,8 @@ class MonitoringState {
     bool? programFeedEnabled,
     String? currentVideoFormat,
     bool clearVideoFormat = false,
+    CodecFormat? currentCodecFormat,
+    bool clearCodecFormat = false,
     FrameGuideRatio? currentFrameGuideRatio,
     FocusAssistState? globalFocusAssistSettings,
   }) {
@@ -399,6 +406,9 @@ class MonitoringState {
       currentVideoFormat: clearVideoFormat
           ? null
           : (currentVideoFormat ?? this.currentVideoFormat),
+      currentCodecFormat: clearCodecFormat
+          ? null
+          : (currentCodecFormat ?? this.currentCodecFormat),
       currentFrameGuideRatio: currentFrameGuideRatio ?? this.currentFrameGuideRatio,
       globalFocusAssistSettings: globalFocusAssistSettings ?? this.globalFocusAssistSettings,
     );
@@ -457,6 +467,7 @@ class MonitoringState {
         mapEquals(other.displays, displays) &&
         other.programFeedEnabled == programFeedEnabled &&
         other.currentVideoFormat == currentVideoFormat &&
+        other.currentCodecFormat == currentCodecFormat &&
         other.currentFrameGuideRatio == currentFrameGuideRatio &&
         other.globalFocusAssistSettings == globalFocusAssistSettings;
   }
@@ -468,6 +479,7 @@ class MonitoringState {
         Object.hashAll(displays.entries),
         programFeedEnabled,
         currentVideoFormat,
+        currentCodecFormat,
         currentFrameGuideRatio,
         globalFocusAssistSettings,
       );

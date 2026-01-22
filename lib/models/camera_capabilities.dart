@@ -70,6 +70,20 @@ class CodecFormat {
     if (variant != null && variant!.isNotEmpty) {
       return '$codec ($variant)';
     }
+    // Format codec string for better readability
+    // e.g., "BRaw:8_1" -> "BRaw 8:1", "BRaw:Q0" -> "BRaw Q0", "ProRes:HQ" -> "ProRes HQ"
+    if (codec.contains(':')) {
+      final parts = codec.split(':');
+      if (parts.length == 2) {
+        final codecType = parts[0];
+        var codecVariant = parts[1];
+        // Convert underscore ratio notation to colon (8_1 -> 8:1)
+        if (codecVariant.contains('_')) {
+          codecVariant = codecVariant.replaceAll('_', ':');
+        }
+        return '$codecType $codecVariant';
+      }
+    }
     return codec;
   }
 

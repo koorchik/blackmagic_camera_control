@@ -1,4 +1,5 @@
 import '../models/camera_state.dart';
+import '../models/camera_capabilities.dart';
 import '../services/camera_service.dart';
 
 /// Controller for monitoring-related operations.
@@ -211,6 +212,31 @@ class MonitoringController {
 
     getService()?.setVideoFormat(name, frameRate).catchError((e) {
       setError('Failed to set video format: $e');
+    });
+  }
+
+  /// Set codec format (camera-wide)
+  void setCodecFormat(String codec, String container) {
+    final state = getState();
+    final previousCodec = state.monitoring.currentCodecFormat;
+
+    // Optimistic update
+    updateState(state.copyWith(
+      monitoring: state.monitoring.copyWith(
+        currentCodecFormat: CodecFormat(codec: codec, container: container),
+      ),
+    ));
+
+    getService()?.setCodecFormat(codec, container).catchError((e) {
+      // Revert on failure
+      final currentState = getState();
+      updateState(currentState.copyWith(
+        monitoring: currentState.monitoring.copyWith(
+          currentCodecFormat: previousCodec,
+          clearCodecFormat: previousCodec == null,
+        ),
+      ));
+      setError('Failed to set codec format: $e');
     });
   }
 }

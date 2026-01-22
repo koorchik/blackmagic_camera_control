@@ -111,8 +111,13 @@ class ApiEndpoints {
   static const String cameraPower = '/control/api/v1/camera/power';
   static const String cameraTallyStatus = '/control/api/v1/camera/tallyStatus';
 
-  // System codec format endpoints
+  // System codec format endpoints (separate codec/video format API)
   static const String systemCodecFormat = '/control/api/v1/system/codecFormat';
+
+  // Combined format endpoints (alternative API used by some cameras)
+  static const String systemFormat = '/control/api/v1/system/format';
+  static const String systemSupportedFormats =
+      '/control/api/v1/system/supportedFormats';
 
   // Presets endpoints
   static const String presets = '/control/api/v1/presets';

@@ -415,9 +415,69 @@ class CameraService {
   /// Get current video format
   Future<Map<String, dynamic>> getVideoFormat() => _apiClient.getVideoFormat();
 
-  /// Set video format
-  Future<void> setVideoFormat(String name, String frameRate) =>
-      _apiClient.setVideoFormat(name, frameRate);
+  /// Set video format (tries separate API first, falls back to combined API)
+  Future<void> setVideoFormat(String name, String frameRate) async {
+    // Try separate video format API first
+    try {
+      await _apiClient.setVideoFormat(name, frameRate);
+      return;
+    } catch (e) {
+      // If it fails (e.g., "Not implemented"), try combined format API
+    }
+
+    // Fall back to combined format API - need to send full format object
+    final currentFormat = await _apiClient.getSystemFormat();
+    if (currentFormat.isEmpty) {
+      throw ApiException('Cannot set video format: unable to get current format');
+    }
+
+    // Parse frame rate - remove 'p' suffix if present (e.g., "24p" -> "24")
+    var cleanFrameRate = frameRate.replaceAll('p', '').replaceAll('i', '');
+
+    // Update frame rate in current format
+    currentFormat['frameRate'] = cleanFrameRate;
+
+    // Send full format back to API
+    await _apiClient.setSystemFormat(currentFormat);
+  }
+
+  /// Get current codec format
+  Future<Map<String, dynamic>> getCodecFormat() => _apiClient.getCodecFormat();
+
+  /// Set codec format (tries separate API first, falls back to combined API)
+  Future<void> setCodecFormat(String codec, String container) async {
+    // Try separate codec format API first
+    try {
+      await _apiClient.setCodecFormat(codec, container);
+      return;
+    } catch (e) {
+      // If it fails (e.g., "Not implemented"), try combined format API
+    }
+
+    // Fall back to combined format API - need to send full format object
+    // First get current format, then update codec and send back
+    final currentFormat = await _apiClient.getSystemFormat();
+    if (currentFormat.isEmpty) {
+      throw ApiException('Cannot set codec: unable to get current format');
+    }
+
+    // Update codec in current format
+    currentFormat['codec'] = codec;
+
+    // Send full format back to API
+    await _apiClient.setSystemFormat(currentFormat);
+  }
+
+  /// Get current system format (combined API)
+  Future<Map<String, dynamic>> getSystemFormat() => _apiClient.getSystemFormat();
+
+  /// Set system format (combined API)
+  Future<void> setSystemFormat(Map<String, dynamic> format) =>
+      _apiClient.setSystemFormat(format);
+
+  /// Get supported formats (combined API)
+  Future<List<Map<String, dynamic>>> getSupportedFormats() =>
+      _apiClient.getSupportedFormats();
 
   /// Fetch initial monitoring state
   Future<MonitoringState> fetchMonitoringState() async {
@@ -452,9 +512,24 @@ class CameraService {
     // Fetch camera-wide settings
     final programFeedEnabled =
         await _safeCall(() => getProgramFeedEnabled(), false);
-    final videoFormatData =
+
+    // Try separate video/codec format APIs first, fall back to combined API
+    var videoFormatData =
         await _safeCall(() => getVideoFormat(), <String, dynamic>{});
+    var codecFormatData =
+        await _safeCall(() => getCodecFormat(), <String, dynamic>{});
+
+    // If separate APIs didn't work, try combined format API
+    if (videoFormatData.isEmpty && codecFormatData.isEmpty) {
+      final systemFormat = await _safeCall(() => getSystemFormat(), <String, dynamic>{});
+      if (systemFormat.isNotEmpty) {
+        videoFormatData = systemFormat;
+        codecFormatData = systemFormat;
+      }
+    }
+
     final currentVideoFormat = _formatVideoFormatString(videoFormatData);
+    final currentCodecFormat = _parseCodecFormat(codecFormatData);
 
     // Fetch frame guide ratio (camera-wide setting)
     final frameGuideRatioStr =
@@ -474,6 +549,7 @@ class CameraService {
       displays: displayStates,
       programFeedEnabled: programFeedEnabled,
       currentVideoFormat: currentVideoFormat,
+      currentCodecFormat: currentCodecFormat,
       currentFrameGuideRatio: frameGuideRatio,
       globalFocusAssistSettings: globalFocusAssist,
     );
@@ -492,6 +568,23 @@ class CameraService {
         return '$name $frameRate';
       }
       return name;
+    }
+
+    // Try combined format API: {"recordResolution": {"width": 3840, "height": 2160}, "frameRate": "24"}
+    final recordResolution = data['recordResolution'] as Map<String, dynamic>?;
+    if (recordResolution != null) {
+      final width = recordResolution['width'] as int?;
+      final height = recordResolution['height'] as int?;
+      final resDesc = data['resolutionDescriptor'] as Map<String, dynamic>?;
+      final description = resDesc?['description'] as String?;
+
+      if (width != null && height != null) {
+        final resolutionStr = description ?? '${width}x$height';
+        if (frameRate != null) {
+          return '$resolutionStr ${frameRate}p';
+        }
+        return resolutionStr;
+      }
     }
 
     // Try alternative format with resolution and fps fields
@@ -520,6 +613,21 @@ class CameraService {
     if (displayName != null) return displayName;
 
     return null;
+  }
+
+  /// Parse codec format from API response
+  /// Handles both separate API ({"codec": "ProRes:HQ", "container": "MOV"})
+  /// and combined API ({"codec": "BRaw:8_1", ...})
+  CodecFormat? _parseCodecFormat(Map<String, dynamic> data) {
+    if (data.isEmpty) return null;
+
+    final codec = data['codec'] as String?;
+    if (codec == null || codec.isEmpty) return null;
+
+    // Separate API has container field, combined API doesn't
+    final container = data['container'] as String? ?? '';
+
+    return CodecFormat(codec: codec, container: container);
   }
 
   // ========== COLOR CORRECTION CONTROL ==========
@@ -676,8 +784,18 @@ class CameraService {
     final isos = results[0] as List<int>;
     final shutters = results[1] as List<int>;
     final nds = results[2] as List<double>;
-    final formats = results[3] as List<Map<String, dynamic>>;
-    final codecs = results[4] as List<Map<String, dynamic>>;
+    var formats = results[3] as List<Map<String, dynamic>>;
+    var codecs = results[4] as List<Map<String, dynamic>>;
+
+    // If separate format APIs returned nothing, try combined format API
+    if (formats.isEmpty && codecs.isEmpty) {
+      final combinedFormats = await _safeCall(() => getSupportedFormats(), <Map<String, dynamic>>[]);
+      if (combinedFormats.isNotEmpty) {
+        final parsed = _parseCombinedFormats(combinedFormats);
+        formats = parsed['formats'] as List<Map<String, dynamic>>;
+        codecs = parsed['codecs'] as List<Map<String, dynamic>>;
+      }
+    }
 
     // If we got no capabilities from the camera, use defaults
     if (isos.isEmpty && shutters.isEmpty) {
@@ -692,6 +810,57 @@ class CameraService {
       supportedCodecFormats: codecs.map((c) => CodecFormat.fromJson(c)).toList(),
       isLoaded: true,
     );
+  }
+
+  /// Parse combined format API response into separate video formats and codecs
+  /// Input: [{ "codecs": [...], "frameRates": [...], "recordResolution": {...} }, ...]
+  /// Output: { "formats": [...], "codecs": [...] }
+  Map<String, List<Map<String, dynamic>>> _parseCombinedFormats(
+    List<Map<String, dynamic>> combinedFormats,
+  ) {
+    final videoFormats = <Map<String, dynamic>>[];
+    final codecFormats = <Map<String, dynamic>>[];
+    final seenCodecs = <String>{};
+
+    for (final group in combinedFormats) {
+      final codecsList = group['codecs'] as List<dynamic>? ?? [];
+      final frameRates = group['frameRates'] as List<dynamic>? ?? [];
+      final resolution = group['recordResolution'] as Map<String, dynamic>?;
+      final resDesc = group['resolutionDescriptor'] as Map<String, dynamic>?;
+
+      final width = resolution?['width'] as int?;
+      final height = resolution?['height'] as int?;
+      final description = resDesc?['description'] as String?;
+      final resolutionName = description ?? (width != null && height != null ? '${width}x$height' : '');
+
+      // Create video formats for each resolution + frame rate combination
+      for (final fr in frameRates) {
+        final frameRate = fr.toString();
+        videoFormats.add({
+          'name': resolutionName,
+          'frameRate': '${frameRate}p',
+          'width': width,
+          'height': height,
+        });
+      }
+
+      // Collect unique codecs
+      for (final codec in codecsList) {
+        final codecStr = codec.toString();
+        if (!seenCodecs.contains(codecStr)) {
+          seenCodecs.add(codecStr);
+          codecFormats.add({
+            'codec': codecStr,
+            'container': '', // Combined API doesn't specify container
+          });
+        }
+      }
+    }
+
+    return {
+      'formats': videoFormats,
+      'codecs': codecFormats,
+    };
   }
 
   void _colorDebounce(Future<void> Function() action) {

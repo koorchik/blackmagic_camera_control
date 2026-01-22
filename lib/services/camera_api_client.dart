@@ -838,6 +838,38 @@ class CameraApiClient {
     await _put(ApiEndpoints.systemCodecFormat, {'codec': codec, 'container': container});
   }
 
+  // ========== COMBINED FORMAT API (alternative endpoints) ==========
+
+  /// Get current format (combined codec + video format)
+  /// Used by cameras that don't support separate codecFormat/videoFormat endpoints
+  Future<Map<String, dynamic>> getSystemFormat() async {
+    try {
+      return await _get(ApiEndpoints.systemFormat);
+    } on FeatureNotSupportedException {
+      return {};
+    }
+  }
+
+  /// Set system format (combined codec + video format)
+  Future<void> setSystemFormat(Map<String, dynamic> format) async {
+    await _put(ApiEndpoints.systemFormat, format);
+  }
+
+  /// Get supported formats (combined codec + video format list)
+  /// Returns format groups with codecs and frameRates arrays
+  Future<List<Map<String, dynamic>>> getSupportedFormats() async {
+    try {
+      final data = await _get(ApiEndpoints.systemSupportedFormats);
+      final formats = data['supportedFormats'] as List<dynamic>?;
+      if (formats != null) {
+        return formats.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } on FeatureNotSupportedException {
+      return [];
+    }
+  }
+
   // ========== PRESETS ==========
 
   /// Get list of presets
@@ -945,7 +977,8 @@ class CameraApiClient {
   Future<List<Map<String, dynamic>>> getSupportedVideoFormats() async {
     try {
       final data = await _get(ApiEndpoints.supportedVideoFormats);
-      final formats = data['supportedVideoFormats'] as List<dynamic>?;
+      // API returns formats under 'formats' key (per SystemControl.yaml spec)
+      final formats = data['formats'] as List<dynamic>?;
       if (formats != null) {
         return formats.cast<Map<String, dynamic>>();
       }
@@ -959,7 +992,8 @@ class CameraApiClient {
   Future<List<Map<String, dynamic>>> getSupportedCodecFormats() async {
     try {
       final data = await _get(ApiEndpoints.supportedCodecFormats);
-      final codecs = data['supportedCodecFormats'] as List<dynamic>?;
+      // API returns codecs under 'codecs' key (per SystemControl.yaml spec)
+      final codecs = data['codecs'] as List<dynamic>?;
       if (codecs != null) {
         return codecs.cast<Map<String, dynamic>>();
       }
