@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/camera_state.dart';
 import 'color_wheel.dart';
 
-class ColorWheelCard extends StatelessWidget {
+class ColorWheelCard extends StatefulWidget {
   const ColorWheelCard({
     super.key,
     required this.title,
@@ -20,11 +20,23 @@ class ColorWheelCard extends StatelessWidget {
   final void Function(ColorWheelValues) onChangeEnd;
   final bool isGain;
 
-  ColorWheelValues get _defaultValues =>
-      isGain ? ColorWheelValues.gainDefault : ColorWheelValues.liftGammaDefault;
+  @override
+  State<ColorWheelCard> createState() => _ColorWheelCardState();
+}
+
+class _ColorWheelCardState extends State<ColorWheelCard> {
+  // Track local dragging values for each slider
+  ColorWheelValues? _draggingValues;
+
+  ColorWheelValues get _defaultValues => widget.isGain
+      ? ColorWheelValues.gainDefault
+      : ColorWheelValues.liftGammaDefault;
 
   bool get _isAtDefault =>
-      isGain ? values.isGainDefault : values.isDefault;
+      widget.isGain ? widget.values.isGainDefault : widget.values.isDefault;
+
+  // Use local dragging values if actively dragging, otherwise use widget values
+  ColorWheelValues get _displayValues => _draggingValues ?? widget.values;
 
   @override
   Widget build(BuildContext context) {
@@ -35,29 +47,33 @@ class ColorWheelCard extends StatelessWidget {
           children: [
             // Header
             Text(
-              title,
+              widget.title,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             Text(
-              subtitle,
+              widget.subtitle,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 16),
             // Color wheel
             Center(
               child: ColorWheel(
-                red: values.red,
-                green: values.green,
-                blue: values.blue,
+                red: _displayValues.red,
+                green: _displayValues.green,
+                blue: _displayValues.blue,
                 size: 180,
-                isGain: isGain,
+                isGain: widget.isGain,
                 onChanged: (r, g, b) {
-                  onChanged(values.copyWith(red: r, green: g, blue: b));
+                  final newValues = _displayValues.copyWith(red: r, green: g, blue: b);
+                  setState(() => _draggingValues = newValues);
+                  widget.onChanged(newValues);
                 },
                 onChangeEnd: (r, g, b) {
-                  onChangeEnd(values.copyWith(red: r, green: g, blue: b));
+                  final newValues = _displayValues.copyWith(red: r, green: g, blue: b);
+                  setState(() => _draggingValues = null);
+                  widget.onChangeEnd(newValues);
                 },
               ),
             ),
@@ -66,34 +82,66 @@ class ColorWheelCard extends StatelessWidget {
             _buildSlider(
               context,
               'Luma',
-              values.luma,
-              (value) => onChanged(values.copyWith(luma: value)),
-              (value) => onChangeEnd(values.copyWith(luma: value)),
+              _displayValues.luma,
+              (value) {
+                final newValues = _displayValues.copyWith(luma: value);
+                setState(() => _draggingValues = newValues);
+                widget.onChanged(newValues);
+              },
+              (value) {
+                final newValues = _displayValues.copyWith(luma: value);
+                setState(() => _draggingValues = null);
+                widget.onChangeEnd(newValues);
+              },
             ),
             const Divider(),
             // RGB sliders
             _buildSlider(
               context,
               'Red',
-              values.red,
-              (value) => onChanged(values.copyWith(red: value)),
-              (value) => onChangeEnd(values.copyWith(red: value)),
+              _displayValues.red,
+              (value) {
+                final newValues = _displayValues.copyWith(red: value);
+                setState(() => _draggingValues = newValues);
+                widget.onChanged(newValues);
+              },
+              (value) {
+                final newValues = _displayValues.copyWith(red: value);
+                setState(() => _draggingValues = null);
+                widget.onChangeEnd(newValues);
+              },
               activeColor: Colors.red,
             ),
             _buildSlider(
               context,
               'Green',
-              values.green,
-              (value) => onChanged(values.copyWith(green: value)),
-              (value) => onChangeEnd(values.copyWith(green: value)),
+              _displayValues.green,
+              (value) {
+                final newValues = _displayValues.copyWith(green: value);
+                setState(() => _draggingValues = newValues);
+                widget.onChanged(newValues);
+              },
+              (value) {
+                final newValues = _displayValues.copyWith(green: value);
+                setState(() => _draggingValues = null);
+                widget.onChangeEnd(newValues);
+              },
               activeColor: Colors.green,
             ),
             _buildSlider(
               context,
               'Blue',
-              values.blue,
-              (value) => onChanged(values.copyWith(blue: value)),
-              (value) => onChangeEnd(values.copyWith(blue: value)),
+              _displayValues.blue,
+              (value) {
+                final newValues = _displayValues.copyWith(blue: value);
+                setState(() => _draggingValues = newValues);
+                widget.onChanged(newValues);
+              },
+              (value) {
+                final newValues = _displayValues.copyWith(blue: value);
+                setState(() => _draggingValues = null);
+                widget.onChangeEnd(newValues);
+              },
               activeColor: Colors.blue,
             ),
             // Reset button
@@ -101,7 +149,7 @@ class ColorWheelCard extends StatelessWidget {
             TextButton(
               onPressed: _isAtDefault
                   ? null
-                  : () => onChangeEnd(_defaultValues),
+                  : () => widget.onChangeEnd(_defaultValues),
               child: const Text('Reset'),
             ),
           ],
@@ -119,8 +167,8 @@ class ColorWheelCard extends StatelessWidget {
     Color? activeColor,
   }) {
     // Gain uses 0.0-2.0 range (multiplicative), Lift/Gamma use -1.0 to 1.0 (additive)
-    final minVal = isGain ? 0.0 : -1.0;
-    final maxVal = isGain ? 2.0 : 1.0;
+    final minVal = widget.isGain ? 0.0 : -1.0;
+    final maxVal = widget.isGain ? 2.0 : 1.0;
 
     return Row(
       children: [
