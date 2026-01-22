@@ -79,9 +79,9 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: _buildDisplaySettings(monitoring)),
+                Expanded(child: _buildLeftColumn(monitoring)),
                 const SizedBox(width: 16),
-                Expanded(child: _buildCameraOutputSettings()),
+                Expanded(child: _buildRightColumn(monitoring)),
               ],
             ),
           );
@@ -99,6 +99,38 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLeftColumn(MonitoringState monitoring) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const DisplaySelector(),
+        const SizedBox(height: 16),
+        if (monitoring.currentDisplay != null) ...[
+          const FocusAssistControl(),
+          const SizedBox(height: 8),
+          const ZebraControl(),
+          const SizedBox(height: 8),
+          const FrameGuidesControl(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildRightColumn(MonitoringState monitoring) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (monitoring.currentDisplay != null) ...[
+          const DisplayLutControl(),
+          const SizedBox(height: 8),
+          const CleanFeedControl(),
+          const SizedBox(height: 16),
+        ],
+        _buildCameraOutputSettings(),
+      ],
     );
   }
 

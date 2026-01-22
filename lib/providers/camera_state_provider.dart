@@ -297,6 +297,9 @@ class CameraStateProvider extends ChangeNotifier {
   void setAudioGainFinal(int channelIndex, double normalizedValue) => _audioController.setGainFinal(channelIndex, normalizedValue);
   void setLowCutFilter(int channelIndex, bool enabled) => _audioController.setLowCutFilter(channelIndex, enabled);
   void setAudioPadding(int channelIndex, bool enabled) => _audioController.setPadding(channelIndex, enabled);
+  void startAudioLevelPolling() => _audioController.startLevelPolling();
+  void stopAudioLevelPolling() => _audioController.stopLevelPolling();
+  bool get isAudioLevelPolling => _audioController.isPolling;
 
   // ========== MEDIA CONTROLS (delegated) ==========
   Future<void> refreshMedia() => _mediaController.refresh();

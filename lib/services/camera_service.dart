@@ -167,9 +167,17 @@ class CameraService {
 
   // ========== AUDIO CONTROL ==========
 
-  /// Get audio level for a channel
+  /// Get audio level for a channel (meter reading)
   Future<double> getAudioLevel(int channelIndex) =>
       _apiClient.getAudioLevel(channelIndex);
+
+  /// Get full audio level data including gain settings for a channel
+  Future<Map<String, dynamic>> getAudioLevelFull(int channelIndex) =>
+      _apiClient.getAudioLevelFull(channelIndex);
+
+  /// Get audio gain for a channel
+  Future<Map<String, dynamic>> getAudioGain(int channelIndex) =>
+      _apiClient.getAudioGain(channelIndex);
 
   /// Get audio input type for a channel
   Future<AudioInputType> getAudioInput(int channelIndex) =>
@@ -227,15 +235,33 @@ class CameraService {
       try {
         final input = await _safeCall(() => getAudioInput(i), AudioInputType.mic);
         final phantom = await _safeCall(() => getPhantomPower(i), false);
-        final level = await _safeCall(() => getAudioLevel(i), 0.0);
         final lowCut = await _safeCall(() => getLowCutFilter(i), false);
         final padding = await _safeCall(() => getPadding(i), false);
         final supportedInputs = await _safeCall(() => getSupportedInputs(i), <String>[]);
         final inputDesc = await _safeCall(() => getInputDescription(i), <String, dynamic>{});
 
-        // Parse gain info from input description
-        final minGain = (inputDesc['gainRange']?['min'] as num?)?.toDouble() ?? -60.0;
-        final maxGain = (inputDesc['gainRange']?['max'] as num?)?.toDouble() ?? 24.0;
+        // Get level/gain data from the level endpoint
+        final levelData = await _safeCall(() => getAudioLevelFull(i), <String, dynamic>{});
+        print('[Audio Ch$i] Level endpoint response: $levelData');
+
+        // Parse all possible gain-related fields
+        // The 'normalised' field could be gain OR meter level depending on camera
+        final normalised = (levelData['normalised'] as num?)?.toDouble() ?? 0.5;
+        final gainFromResponse = (levelData['gain'] as num?)?.toDouble();
+        final inputLevel = (levelData['inputLevel'] as num?)?.toDouble();
+
+        // Use 'gain' field if present, otherwise fall back to 'normalised'
+        final gainNormalized = inputLevel ?? normalised;
+        final gain = gainFromResponse ?? 0.0;
+
+        // For VU meter - will be updated by polling, start at 0
+        final levelNormalized = 0.0;
+
+        // Parse gain range from input description
+        final minGain = (inputDesc['gainRange']?['min'] as num?)?.toDouble() ?? 0.0;
+        final maxGain = (inputDesc['gainRange']?['max'] as num?)?.toDouble() ?? 36.0;
+        print('[Audio Ch$i] Input description: $inputDesc');
+        print('[Audio Ch$i] Gain range: $minGain to $maxGain dB');
 
         // Convert supportedInputs strings to AudioInputType
         final supportedTypes = supportedInputs
@@ -244,7 +270,9 @@ class CameraService {
 
         channels.add(AudioChannelState(
           index: i,
-          levelNormalized: level,
+          levelNormalized: levelNormalized,
+          gain: gain,
+          gainNormalized: gainNormalized,
           inputType: input,
           phantomPower: phantom,
           lowCutFilter: lowCut,

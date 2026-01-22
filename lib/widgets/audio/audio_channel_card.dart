@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/camera_state.dart';
-import 'vu_meter.dart';
+import '../../models/audio_state.dart';
+import 'gain_bar.dart';
 
 class AudioChannelCard extends StatefulWidget {
   const AudioChannelCard({
@@ -39,6 +39,8 @@ class _AudioChannelCardState extends State<AudioChannelCard> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
+              Icon(Icons.mic_off, color: Colors.grey.shade600),
+              const SizedBox(width: 12),
               Text(
                 'Channel ${channel.index + 1}',
                 style: Theme.of(context).textTheme.titleMedium,
@@ -58,249 +60,305 @@ class _AudioChannelCardState extends State<AudioChannelCard> {
     final displayGain = _localGain ?? channel.gainNormalized;
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header with channel name and level indicator
+          _buildHeader(context),
+          const Divider(height: 1),
+
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Channel ${channel.index + 1}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const Spacer(),
-                _buildLevelText(context),
+                // Input Gain Bar (combined VU meter + slider)
+                if (widget.onGainChanged != null) ...[
+                  _buildGainSection(context, displayGain),
+                  const SizedBox(height: 20),
+                ],
+
+                // Input Type Selector
+                _buildInputTypeSection(context),
+                const SizedBox(height: 16),
+
+                // Audio Options (Phantom Power, Low Cut, Padding)
+                _buildOptionsSection(context),
               ],
             ),
-            const SizedBox(height: 16),
-            // VU Meter
-            Center(
-              child: VuMeterWithLabels(
-                level: channel.levelNormalized,
-                height: 150,
-                horizontal: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.mic,
+            color: colorScheme.primary,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Channel ${channel.index + 1}',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const Spacer(),
+          Text(
+            channel.inputType.label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: colorScheme.primary,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGainSection(BuildContext context, double displayGain) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Input Gain',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Colors.grey.shade600,
+              ),
+        ),
+        const SizedBox(height: 8),
+        GainBar(
+          value: displayGain,
+          minDb: channel.minGain,
+          maxDb: channel.maxGain,
+          height: 36,
+          onChanged: (value) {
+            setState(() => _localGain = value);
+            widget.onGainChanged?.call(value);
+          },
+          onChangeEnd: (value) {
+            setState(() => _localGain = null);
+            widget.onGainChangeEnd?.call(value);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputTypeSection(BuildContext context) {
+    // Use supportedInputs if available, otherwise only show the current input
+    // (we don't want to show options that might not be supported)
+    final availableInputs = channel.supportedInputs.isNotEmpty
+        ? channel.supportedInputs
+        : [channel.inputType];
+
+    // If only one input is available, just show it as text
+    if (availableInputs.length <= 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Input Source',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Colors.grey.shade600,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: Theme.of(context).colorScheme.primaryContainer,
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
               ),
             ),
-            const SizedBox(height: 16),
-            // Input Gain Slider
-            if (widget.onGainChanged != null) ...[
-              _buildGainSlider(context, displayGain),
-              const SizedBox(height: 16),
-            ],
-            // Input Type
-            _buildInputTypeSelector(context),
-            const SizedBox(height: 12),
-            // Phantom Power
-            _buildPhantomPowerRow(context),
-            const SizedBox(height: 12),
-            // Low Cut Filter and Padding
-            _buildAudioOptionsRow(context),
-          ],
+            child: Text(
+              channel.inputType.label,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Input Source',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Colors.grey.shade600,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: availableInputs.map((type) {
+            final isSelected = channel.inputType == type;
+            return _buildInputButton(context, type, isSelected);
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputButton(BuildContext context, AudioInputType type, bool isSelected) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: isSelected ? colorScheme.primaryContainer : Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: () => widget.onInputTypeChanged(type),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? colorScheme.primary : colorScheme.outline,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Text(
+            type.label,
+            style: TextStyle(
+              color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildGainSlider(BuildContext context, double displayGain) {
-    // Calculate dB value for display
-    final minDb = channel.minGain;
-    final maxDb = channel.maxGain;
-    final dbRange = maxDb - minDb;
-    final currentDb = minDb + (displayGain * dbRange);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Input Gain',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const Spacer(),
-            Text(
-              '${currentDb.toStringAsFixed(1)} dB',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontFamily: 'monospace',
-                  ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Text(
-              '${minDb.toInt()}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
-                  ),
-            ),
-            Expanded(
-              child: Slider(
-                value: displayGain,
-                min: 0.0,
-                max: 1.0,
-                onChanged: (value) {
-                  setState(() => _localGain = value);
-                  widget.onGainChanged?.call(value);
-                },
-                onChangeEnd: (value) {
-                  setState(() => _localGain = null);
-                  widget.onGainChangeEnd?.call(value);
-                },
-              ),
-            ),
-            Text(
-              '${maxDb.toInt()}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
-                  ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInputTypeSelector(BuildContext context) {
-    // Use supportedInputs if available, otherwise default to Mic/Line
-    final availableInputs = channel.supportedInputs.isNotEmpty
-        ? channel.supportedInputs
-        : [AudioInputType.mic, AudioInputType.line];
-
-    return Row(
-      children: [
-        Text(
-          'Input',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SegmentedButton<AudioInputType>(
-              segments: availableInputs.map((type) {
-                return ButtonSegment<AudioInputType>(
-                  value: type,
-                  label: Text(type.label),
-                );
-              }).toList(),
-              selected: {channel.inputType},
-              onSelectionChanged: (selected) {
-                widget.onInputTypeChanged(selected.first);
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPhantomPowerRow(BuildContext context) {
-    // Phantom power is typically only available for Mic/XLR inputs
+  Widget _buildOptionsSection(BuildContext context) {
     final phantomAvailable = channel.inputType == AudioInputType.mic ||
         channel.inputType == AudioInputType.xlr;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Phantom Power (48V)',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const Spacer(),
-            Switch(
-              value: channel.phantomPower,
-              onChanged: phantomAvailable ? widget.onPhantomPowerChanged : null,
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Options',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Colors.grey.shade600,
+                ),
+          ),
+          const SizedBox(height: 8),
+
+          // Phantom Power
+          _buildOptionRow(
+            context,
+            icon: Icons.power,
+            label: 'Phantom Power (48V)',
+            value: channel.phantomPower,
+            enabled: phantomAvailable,
+            onChanged: widget.onPhantomPowerChanged,
+            tooltip: phantomAvailable
+                ? null
+                : 'Only available for Mic/XLR input',
+          ),
+
+          // Low Cut Filter
+          if (widget.onLowCutFilterChanged != null) ...[
+            const SizedBox(height: 4),
+            _buildOptionRow(
+              context,
+              icon: Icons.graphic_eq,
+              label: 'Low Cut Filter',
+              value: channel.lowCutFilter,
+              enabled: true,
+              onChanged: widget.onLowCutFilterChanged!,
+              tooltip: 'Reduces low frequency rumble and wind noise',
             ),
           ],
-        ),
-        if (!phantomAvailable)
-          Text(
-            'Phantom power only available for Mic/XLR input',
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: Colors.grey),
-          ),
-      ],
+
+          // Padding
+          if (widget.onPaddingChanged != null) ...[
+            const SizedBox(height: 4),
+            _buildOptionRow(
+              context,
+              icon: Icons.volume_down,
+              label: 'Pad (-20dB)',
+              value: channel.padding,
+              enabled: true,
+              onChanged: widget.onPaddingChanged!,
+              tooltip: 'Attenuates loud input signals',
+            ),
+          ],
+        ],
+      ),
     );
   }
 
-  Widget _buildAudioOptionsRow(BuildContext context) {
-    return Row(
+  Widget _buildOptionRow(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required bool value,
+    required bool enabled,
+    required ValueChanged<bool> onChanged,
+    String? tooltip,
+  }) {
+    final content = Row(
       children: [
-        // Low Cut Filter
-        if (widget.onLowCutFilterChanged != null) ...[
-          Expanded(
-            child: Row(
-              children: [
-                Icon(
-                  Icons.graphic_eq,
-                  size: 18,
-                  color: channel.lowCutFilter ? Theme.of(context).colorScheme.primary : Colors.grey,
+        Icon(
+          icon,
+          size: 18,
+          color: value && enabled
+              ? Theme.of(context).colorScheme.primary
+              : Colors.grey,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: enabled ? null : Colors.grey,
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  'Low Cut',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const Spacer(),
-                Switch(
-                  value: channel.lowCutFilter,
-                  onChanged: widget.onLowCutFilterChanged,
-                ),
-              ],
-            ),
           ),
-        ],
-        // Padding
-        if (widget.onPaddingChanged != null) ...[
-          Expanded(
-            child: Row(
-              children: [
-                Icon(
-                  Icons.volume_down,
-                  size: 18,
-                  color: channel.padding ? Theme.of(context).colorScheme.primary : Colors.grey,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Pad',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const Spacer(),
-                Switch(
-                  value: channel.padding,
-                  onChanged: widget.onPaddingChanged,
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
+        Switch(
+          value: value,
+          onChanged: enabled ? onChanged : null,
+        ),
       ],
     );
-  }
 
-  Widget _buildLevelText(BuildContext context) {
-    // Convert normalized to approximate dB
-    final db = channel.levelNormalized > 0
-        ? (channel.levelNormalized * 48 - 48).toStringAsFixed(1)
-        : '-inf';
+    if (tooltip != null && !enabled) {
+      return Tooltip(
+        message: tooltip,
+        child: content,
+      );
+    }
 
-    return Text(
-      '$db dB',
-      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            fontFamily: 'monospace',
-            color: channel.levelNormalized > 0.9
-                ? Colors.red
-                : channel.levelNormalized > 0.75
-                    ? Colors.orange
-                    : null,
-          ),
-    );
+    return content;
   }
 }

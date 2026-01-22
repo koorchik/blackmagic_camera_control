@@ -36,6 +36,8 @@ class ApiEndpoints {
   // Audio endpoints
   static String audioChannelLevel(int index) =>
       '/control/api/v1/audio/channel/$index/level';
+  static String audioChannelGain(int index) =>
+      '/control/api/v1/audio/channel/$index/gain';
   static String audioChannelInput(int index) =>
       '/control/api/v1/audio/channel/$index/input';
   static String audioChannelPhantom(int index) =>

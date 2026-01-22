@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/audio_state.dart';
 import '../providers/camera_state_provider.dart';
 import '../widgets/audio/audio_channel_card.dart';
 
@@ -40,32 +41,85 @@ class _AudioScreenState extends State<AudioScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: audio.channels.length,
-      itemBuilder: (context, index) {
-        final channel = audio.channels[index];
-        return AudioChannelCard(
-          channel: channel,
-          onInputTypeChanged: (type) {
-            cameraState.setAudioInput(index, type);
-          },
-          onPhantomPowerChanged: (enabled) {
-            cameraState.setPhantomPower(index, enabled);
-          },
-          onGainChanged: (value) {
-            cameraState.setAudioGainDebounced(index, value);
-          },
-          onGainChangeEnd: (value) {
-            cameraState.setAudioGainFinal(index, value);
-          },
-          onLowCutFilterChanged: (enabled) {
-            cameraState.setLowCutFilter(index, enabled);
-          },
-          onPaddingChanged: (enabled) {
-            cameraState.setAudioPadding(index, enabled);
-          },
-        );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 800;
+
+        if (isWide) {
+          // Wide layout: 2 channels side by side
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: _buildWideLayout(cameraState, audio.channels),
+          );
+        } else {
+          // Narrow layout: vertical stack
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: audio.channels.length,
+            itemBuilder: (context, index) {
+              return _buildChannelCard(cameraState, audio.channels[index]);
+            },
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildWideLayout(CameraStateProvider cameraState, List<AudioChannelState> channels) {
+    final List<Widget> rows = [];
+
+    // Group channels in pairs for side-by-side display
+    for (var i = 0; i < channels.length; i += 2) {
+      final firstChannel = channels[i];
+      final secondChannel = i + 1 < channels.length ? channels[i + 1] : null;
+
+      rows.add(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildChannelCard(cameraState, firstChannel),
+              ),
+              if (secondChannel != null) ...[
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildChannelCard(cameraState, secondChannel),
+                ),
+              ] else
+                const Spacer(),
+            ],
+          ),
+        ),
+      );
+      if (i + 2 < channels.length) {
+        rows.add(const SizedBox(height: 8));
+      }
+    }
+
+    return Column(children: rows);
+  }
+
+  Widget _buildChannelCard(CameraStateProvider cameraState, AudioChannelState channel) {
+    return AudioChannelCard(
+      channel: channel,
+      onInputTypeChanged: (type) {
+        cameraState.setAudioInput(channel.index, type);
+      },
+      onPhantomPowerChanged: (enabled) {
+        cameraState.setPhantomPower(channel.index, enabled);
+      },
+      onGainChanged: (value) {
+        cameraState.setAudioGainDebounced(channel.index, value);
+      },
+      onGainChangeEnd: (value) {
+        cameraState.setAudioGainFinal(channel.index, value);
+      },
+      onLowCutFilterChanged: (enabled) {
+        cameraState.setLowCutFilter(channel.index, enabled);
+      },
+      onPaddingChanged: (enabled) {
+        cameraState.setAudioPadding(channel.index, enabled);
       },
     );
   }

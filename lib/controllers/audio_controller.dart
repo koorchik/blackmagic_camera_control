@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../models/camera_state.dart';
 import '../services/camera_service.dart';
 
@@ -14,6 +15,9 @@ class AudioController {
   final void Function(CameraState state) updateState;
   final void Function(String error) setError;
   final CameraService? Function() getService;
+
+  Timer? _levelPollingTimer;
+  bool _isPolling = false;
 
   /// Fetch fresh audio state
   Future<void> refresh() async {
@@ -32,12 +36,24 @@ class AudioController {
   void setInput(int channelIndex, AudioInputType type) {
     final state = getState();
     final channels = List<AudioChannelState>.from(state.audio.channels);
+    final previousType = channelIndex < channels.length
+        ? channels[channelIndex].inputType
+        : AudioInputType.mic;
+
     if (channelIndex < channels.length) {
       channels[channelIndex] = channels[channelIndex].copyWith(inputType: type);
       updateState(state.copyWith(audio: state.audio.copyWith(channels: channels)));
     }
+
     getService()?.setAudioInput(channelIndex, type).catchError((e) {
-      setError('Failed to set audio input: $e');
+      // Revert to previous value on error
+      final currentState = getState();
+      final currentChannels = List<AudioChannelState>.from(currentState.audio.channels);
+      if (channelIndex < currentChannels.length) {
+        currentChannels[channelIndex] = currentChannels[channelIndex].copyWith(inputType: previousType);
+        updateState(currentState.copyWith(audio: currentState.audio.copyWith(channels: currentChannels)));
+      }
+      setError('Failed to set audio input: ${type.label} not supported');
     });
   }
 
@@ -45,12 +61,24 @@ class AudioController {
   void setPhantomPower(int channelIndex, bool enabled) {
     final state = getState();
     final channels = List<AudioChannelState>.from(state.audio.channels);
+    final previousValue = channelIndex < channels.length
+        ? channels[channelIndex].phantomPower
+        : false;
+
     if (channelIndex < channels.length) {
       channels[channelIndex] = channels[channelIndex].copyWith(phantomPower: enabled);
       updateState(state.copyWith(audio: state.audio.copyWith(channels: channels)));
     }
+
     getService()?.setPhantomPower(channelIndex, enabled).catchError((e) {
-      setError('Failed to set phantom power: $e');
+      // Revert to previous value on error
+      final currentState = getState();
+      final currentChannels = List<AudioChannelState>.from(currentState.audio.channels);
+      if (channelIndex < currentChannels.length) {
+        currentChannels[channelIndex] = currentChannels[channelIndex].copyWith(phantomPower: previousValue);
+        updateState(currentState.copyWith(audio: currentState.audio.copyWith(channels: currentChannels)));
+      }
+      setError('Phantom power not supported on this channel');
     });
   }
 
@@ -78,12 +106,24 @@ class AudioController {
   void setLowCutFilter(int channelIndex, bool enabled) {
     final state = getState();
     final channels = List<AudioChannelState>.from(state.audio.channels);
+    final previousValue = channelIndex < channels.length
+        ? channels[channelIndex].lowCutFilter
+        : false;
+
     if (channelIndex < channels.length) {
       channels[channelIndex] = channels[channelIndex].copyWith(lowCutFilter: enabled);
       updateState(state.copyWith(audio: state.audio.copyWith(channels: channels)));
     }
+
     getService()?.setLowCutFilter(channelIndex, enabled).catchError((e) {
-      setError('Failed to set low cut filter: $e');
+      // Revert to previous value on error
+      final currentState = getState();
+      final currentChannels = List<AudioChannelState>.from(currentState.audio.channels);
+      if (channelIndex < currentChannels.length) {
+        currentChannels[channelIndex] = currentChannels[channelIndex].copyWith(lowCutFilter: previousValue);
+        updateState(currentState.copyWith(audio: currentState.audio.copyWith(channels: currentChannels)));
+      }
+      setError('Low cut filter not supported on this camera');
     });
   }
 
@@ -91,12 +131,67 @@ class AudioController {
   void setPadding(int channelIndex, bool enabled) {
     final state = getState();
     final channels = List<AudioChannelState>.from(state.audio.channels);
+    final previousValue = channelIndex < channels.length
+        ? channels[channelIndex].padding
+        : false;
+
     if (channelIndex < channels.length) {
       channels[channelIndex] = channels[channelIndex].copyWith(padding: enabled);
       updateState(state.copyWith(audio: state.audio.copyWith(channels: channels)));
     }
+
     getService()?.setPadding(channelIndex, enabled).catchError((e) {
-      setError('Failed to set padding: $e');
+      // Revert to previous value on error
+      final currentState = getState();
+      final currentChannels = List<AudioChannelState>.from(currentState.audio.channels);
+      if (channelIndex < currentChannels.length) {
+        currentChannels[channelIndex] = currentChannels[channelIndex].copyWith(padding: previousValue);
+        updateState(currentState.copyWith(audio: currentState.audio.copyWith(channels: currentChannels)));
+      }
+      setError('Padding not supported on this camera');
     });
+  }
+
+  /// Start polling audio levels (fallback when WebSocket doesn't provide updates)
+  void startLevelPolling({Duration interval = const Duration(milliseconds: 200)}) {
+    if (_isPolling) return;
+    _isPolling = true;
+    _levelPollingTimer = Timer.periodic(interval, (_) => _pollAudioLevels());
+  }
+
+  /// Stop polling audio levels
+  void stopLevelPolling() {
+    _isPolling = false;
+    _levelPollingTimer?.cancel();
+    _levelPollingTimer = null;
+  }
+
+  /// Whether audio level polling is active
+  bool get isPolling => _isPolling;
+
+  /// Poll audio levels once from the API
+  Future<void> _pollAudioLevels() async {
+    final service = getService();
+    if (service == null) return;
+
+    final state = getState();
+    final channels = List<AudioChannelState>.from(state.audio.channels);
+
+    for (var i = 0; i < channels.length; i++) {
+      if (!channels[i].available) continue;
+      try {
+        final level = await service.getAudioLevel(i);
+        channels[i] = channels[i].copyWith(levelNormalized: level);
+      } catch (_) {
+        // Ignore errors during polling
+      }
+    }
+
+    updateState(state.copyWith(audio: state.audio.copyWith(channels: channels)));
+  }
+
+  /// Dispose of resources
+  void dispose() {
+    stopLevelPolling();
   }
 }

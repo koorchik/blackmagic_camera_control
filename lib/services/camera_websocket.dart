@@ -134,16 +134,6 @@ class CameraWebSocket {
           _slateController.add(SlateState.fromJson(payload));
           break;
 
-        // Audio level updates
-        case 'audio/channel/0/level':
-        case 'audio/channel/1/level':
-        case 'audio/channel/2/level':
-        case 'audio/channel/3/level':
-          final channelIndex = int.tryParse(type!.split('/')[2]) ?? 0;
-          final level = (payload['normalised'] as num?)?.toDouble() ?? 0.0;
-          _audioLevelController.add({channelIndex: level});
-          break;
-
         // Color correction updates
         case 'colorCorrection/lift':
           _colorCorrectionController.add(ColorCorrectionState(
@@ -164,6 +154,20 @@ class CameraWebSocket {
         // Media updates
         case 'media/devices':
           _mediaController.add(MediaState.fromJson(payload));
+          break;
+
+        // Audio level updates - handle any channel index dynamically
+        default:
+          if (type != null && type.startsWith('audio/channel/') && type.endsWith('/level')) {
+            final parts = type.split('/');
+            if (parts.length >= 3) {
+              final channelIndex = int.tryParse(parts[2]);
+              if (channelIndex != null) {
+                final level = (payload['normalised'] as num?)?.toDouble() ?? 0.0;
+                _audioLevelController.add({channelIndex: level});
+              }
+            }
+          }
           break;
       }
     } catch (e) {

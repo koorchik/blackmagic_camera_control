@@ -194,17 +194,76 @@ class CameraApiClient {
 
   // ========== AUDIO CONTROL ==========
 
-  /// Get audio level for a channel
+  /// Get audio level for a channel (meter reading)
   Future<double> getAudioLevel(int channelIndex) async {
     final data = await _get(ApiEndpoints.audioChannelLevel(channelIndex));
     return (data['normalised'] as num?)?.toDouble() ?? 0.0;
+  }
+
+  /// Get full audio level data including gain settings for a channel
+  /// Returns a map with: normalised (meter), gain (dB), gainNormalised (0-1)
+  Future<Map<String, dynamic>> getAudioLevelFull(int channelIndex) async {
+    final data = await _get(ApiEndpoints.audioChannelLevel(channelIndex));
+    return data;
+  }
+
+  /// Get audio gain for a channel
+  /// Returns a map with: gain (dB) and normalised (0-1)
+  Future<Map<String, dynamic>> getAudioGain(int channelIndex) async {
+    // Try dedicated gain endpoint first
+    try {
+      final data = await _get(ApiEndpoints.audioChannelGain(channelIndex));
+      print('[Audio] Gain endpoint returned: $data');
+      return data;
+    } catch (e) {
+      print('[Audio] Gain endpoint failed: $e');
+    }
+
+    // Fallback: try to get gain from the level endpoint
+    try {
+      final levelData = await _get(ApiEndpoints.audioChannelLevel(channelIndex));
+      print('[Audio] Level endpoint returned: $levelData');
+      // Some cameras include gain in the level response
+      if (levelData.containsKey('gain') || levelData.containsKey('inputGain')) {
+        return {
+          'gain': levelData['gain'] ?? levelData['inputGain'] ?? 0.0,
+          'normalised': levelData['gainNormalised'] ?? levelData['inputGainNormalised'] ?? 0.5,
+        };
+      }
+    } catch (e) {
+      print('[Audio] Level endpoint failed: $e');
+    }
+
+    // Fallback: try to get gain from input description
+    try {
+      final descData = await _get(ApiEndpoints.audioChannelInputDescription(channelIndex));
+      print('[Audio] Input description returned: $descData');
+      // Input description might contain current gain
+      if (descData.containsKey('gain') || descData.containsKey('currentGain')) {
+        final gainDb = (descData['gain'] ?? descData['currentGain'] as num?)?.toDouble() ?? 0.0;
+        final minGain = (descData['gainRange']?['min'] as num?)?.toDouble() ?? -60.0;
+        final maxGain = (descData['gainRange']?['max'] as num?)?.toDouble() ?? 24.0;
+        // Calculate normalized value from dB
+        final normalised = (gainDb - minGain) / (maxGain - minGain);
+        return {
+          'gain': gainDb,
+          'normalised': normalised.clamp(0.0, 1.0),
+        };
+      }
+    } catch (e) {
+      print('[Audio] Input description failed: $e');
+    }
+
+    // Return default if not available
+    print('[Audio] No gain data found, using defaults');
+    return {'gain': 0.0, 'normalised': 0.5};
   }
 
   /// Get audio input type for a channel
   Future<AudioInputType> getAudioInput(int channelIndex) async {
     final data = await _get(ApiEndpoints.audioChannelInput(channelIndex));
     final inputStr = data['input'] as String?;
-    return inputStr == 'Line' ? AudioInputType.line : AudioInputType.mic;
+    return AudioInputType.fromString(inputStr);
   }
 
   /// Set audio input type for a channel

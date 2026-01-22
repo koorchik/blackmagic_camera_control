@@ -102,7 +102,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Camera IP Address',
                         hintText: '192.168.1.100',
-                        prefixIcon: Icon(Icons.router),
+                        prefixIcon: Icon(Icons.lan),
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.url,

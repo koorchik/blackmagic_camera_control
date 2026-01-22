@@ -33,14 +33,17 @@ class ControlScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Left column items: Focus, Iris, Shutter, ISO
           _buildFocusCard(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           const IrisControl(),
-          const ZoomControl(),
-          const IsoSelector(),
           const ShutterControl(),
-          const WhiteBalanceControl(),
+          const IsoSelector(),
           const SizedBox(height: 16),
+          // Right column items: White Balance, Zoom, Slate
+          const WhiteBalanceControl(),
+          const ZoomControl(),
+          const SizedBox(height: 8),
           const SlateCard(),
         ],
       ),
@@ -53,27 +56,27 @@ class ControlScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left column - Lens controls
+          // Left column - Focus, Iris, Shutter, ISO
           Expanded(
             child: Column(
               children: [
                 _buildFocusCard(),
                 const SizedBox(height: 8),
                 const IrisControl(),
-                const ZoomControl(),
-                const SizedBox(height: 8),
-                const SlateCard(),
+                const ShutterControl(),
+                const IsoSelector(),
               ],
             ),
           ),
           const SizedBox(width: 16),
-          // Right column - Video settings
+          // Right column - White Balance, Zoom, Slate
           const Expanded(
             child: Column(
               children: [
-                IsoSelector(),
-                ShutterControl(),
                 WhiteBalanceControl(),
+                ZoomControl(),
+                SizedBox(height: 8),
+                SlateCard(),
               ],
             ),
           ),

@@ -50,8 +50,8 @@ class AudioChannelState {
     this.lowCutFilter = false,
     this.padding = false,
     this.supportedInputs = const [],
-    this.minGain = -60.0,
-    this.maxGain = 24.0,
+    this.minGain = 0.0,
+    this.maxGain = 36.0,
   });
 
   /// Channel index (0-based)
@@ -87,10 +87,10 @@ class AudioChannelState {
   /// List of supported input types for this channel
   final List<AudioInputType> supportedInputs;
 
-  /// Minimum gain value in dB (from input description)
+  /// Minimum gain value in dB (from input description, typically 0)
   final double minGain;
 
-  /// Maximum gain value in dB (from input description)
+  /// Maximum gain value in dB (from input description, typically 36 or similar)
   final double maxGain;
 
   AudioChannelState copyWith({
@@ -145,8 +145,8 @@ class AudioChannelState {
       lowCutFilter: json['lowCutFilter'] as bool? ?? false,
       padding: json['padding'] as bool? ?? false,
       supportedInputs: supportedInputs,
-      minGain: (json['minGain'] as num?)?.toDouble() ?? -60.0,
-      maxGain: (json['maxGain'] as num?)?.toDouble() ?? 24.0,
+      minGain: (json['minGain'] as num?)?.toDouble() ?? 0.0,
+      maxGain: (json['maxGain'] as num?)?.toDouble() ?? 36.0,
     );
   }
 
