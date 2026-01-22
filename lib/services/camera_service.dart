@@ -167,6 +167,14 @@ class CameraService {
 
   // ========== AUDIO CONTROL ==========
 
+  /// Get total number of audio channels available
+  Future<int> getAudioChannelCount() =>
+      _apiClient.getAudioChannelCount();
+
+  /// Get channel availability status
+  Future<bool> getAudioChannelAvailable(int channelIndex) =>
+      _apiClient.getAudioChannelAvailable(channelIndex);
+
   /// Get audio level for a channel (meter reading)
   Future<double> getAudioLevel(int channelIndex) =>
       _apiClient.getAudioLevel(channelIndex);
@@ -174,10 +182,6 @@ class CameraService {
   /// Get full audio level data including gain settings for a channel
   Future<Map<String, dynamic>> getAudioLevelFull(int channelIndex) =>
       _apiClient.getAudioLevelFull(channelIndex);
-
-  /// Get audio gain for a channel
-  Future<Map<String, dynamic>> getAudioGain(int channelIndex) =>
-      _apiClient.getAudioGain(channelIndex);
 
   /// Get audio input type for a channel
   Future<AudioInputType> getAudioInput(int channelIndex) =>
@@ -196,7 +200,8 @@ class CameraService {
       _apiClient.setPhantomPower(channelIndex, enabled);
 
   /// Get supported inputs for a channel
-  Future<List<String>> getSupportedInputs(int channelIndex) =>
+  /// Returns list of objects with 'input' (string) and 'available' (bool)
+  Future<List<Map<String, dynamic>>> getSupportedInputs(int channelIndex) =>
       _apiClient.getSupportedInputs(channelIndex);
 
   /// Set audio level/gain for a channel
@@ -229,15 +234,25 @@ class CameraService {
       _apiClient.getInputDescription(channelIndex);
 
   /// Fetch initial audio state for all channels
-  Future<AudioState> fetchAudioState({int channelCount = 2}) async {
+  Future<AudioState> fetchAudioState({int? channelCount}) async {
+    // Get dynamic channel count from API if not provided
+    final int count = channelCount ?? await _safeCall(() => getAudioChannelCount(), 2);
+
     final channels = <AudioChannelState>[];
-    for (var i = 0; i < channelCount; i++) {
+    for (var i = 0; i < count; i++) {
       try {
+        // Check if channel is available first
+        final available = await _safeCall(() => getAudioChannelAvailable(i), true);
+        if (!available) {
+          channels.add(AudioChannelState(index: i, available: false));
+          continue;
+        }
+
         final input = await _safeCall(() => getAudioInput(i), AudioInputType.mic);
         final phantom = await _safeCall(() => getPhantomPower(i), false);
         final lowCut = await _safeCall(() => getLowCutFilter(i), false);
         final padding = await _safeCall(() => getPadding(i), false);
-        final supportedInputs = await _safeCall(() => getSupportedInputs(i), <String>[]);
+        final supportedInputsData = await _safeCall(() => getSupportedInputs(i), <Map<String, dynamic>>[]);
         final inputDesc = await _safeCall(() => getInputDescription(i), <String, dynamic>{});
 
         // Get level/gain data from the level endpoint
@@ -258,14 +273,19 @@ class CameraService {
         final levelNormalized = 0.0;
 
         // Parse gain range from input description
-        final minGain = (inputDesc['gainRange']?['min'] as num?)?.toDouble() ?? 0.0;
-        final maxGain = (inputDesc['gainRange']?['max'] as num?)?.toDouble() ?? 36.0;
+        // API returns: { "description": { "gainRange": { "Min": ..., "Max": ... }, ... } }
+        final description = inputDesc['description'] as Map<String, dynamic>?;
+        final gainRange = description?['gainRange'] as Map<String, dynamic>?;
+        // Note: API uses uppercase 'Min' and 'Max' keys
+        final minGain = (gainRange?['Min'] as num?)?.toDouble() ?? 0.0;
+        final maxGain = (gainRange?['Max'] as num?)?.toDouble() ?? 36.0;
         print('[Audio Ch$i] Input description: $inputDesc');
         print('[Audio Ch$i] Gain range: $minGain to $maxGain dB');
 
-        // Convert supportedInputs strings to AudioInputType
-        final supportedTypes = supportedInputs
-            .map((s) => AudioInputType.fromString(s))
+        // Extract input names from supported inputs data
+        // API returns: [ { "input": "Mic", "available": true }, ... ]
+        final supportedTypes = supportedInputsData
+            .map((item) => AudioInputType.fromString(item['input'] as String?))
             .toList();
 
         channels.add(AudioChannelState(

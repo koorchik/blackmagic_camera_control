@@ -2,12 +2,35 @@ import 'package:flutter/foundation.dart';
 
 /// Audio input type
 enum AudioInputType {
-  mic('Mic', 'Microphone'),
-  line('Line', 'Line Level'),
-  camera('Camera', 'Camera Mic'),
-  xlr('XLR', 'XLR Input'),
-  internalMic('Internal Mic', 'Internal Microphone'),
-  none('None', 'No Input');
+  // Basic types
+  none('None', 'None'),
+
+  // Camera internal microphone options
+  cameraLeft('Camera - Left', 'Camera L'),
+  cameraRight('Camera - Right', 'Camera R'),
+  cameraMono('Camera - Mono', 'Camera Mono'),
+
+  // 3.5mm Line input options
+  lineLeft('3.5mm Left - Line', '3.5mm L Line'),
+  lineRight('3.5mm Right - Line', '3.5mm R Line'),
+  lineMono('3.5mm Mono - Line', '3.5mm Mono Line'),
+
+  // 3.5mm Mic input options
+  micLeft('3.5mm Left - Mic', '3.5mm L Mic'),
+  micRight('3.5mm Right - Mic', '3.5mm R Mic'),
+  micMono('3.5mm Mono - Mic', '3.5mm Mono Mic'),
+
+  // XLR options (for cameras with XLR inputs)
+  xlrLeft('XLR Left', 'XLR L'),
+  xlrRight('XLR Right', 'XLR R'),
+  xlrMono('XLR Mono', 'XLR Mono'),
+
+  // Legacy/generic types for backwards compatibility
+  mic('Mic', 'Mic'),
+  line('Line', 'Line'),
+  camera('Camera', 'Camera'),
+  xlr('XLR', 'XLR'),
+  internalMic('Internal Mic', 'Internal');
 
   const AudioInputType(this.code, this.label);
   final String code;
@@ -15,23 +38,23 @@ enum AudioInputType {
 
   /// Parse input type from API string
   static AudioInputType fromString(String? value) {
-    if (value == null) return AudioInputType.mic;
+    if (value == null) return AudioInputType.none;
+
+    // First try exact match by code
+    for (final type in AudioInputType.values) {
+      if (type.code.toLowerCase() == value.toLowerCase()) {
+        return type;
+      }
+    }
+
+    // Fallback for legacy/simplified names
     switch (value.toLowerCase()) {
-      case 'mic':
-        return AudioInputType.mic;
-      case 'line':
-        return AudioInputType.line;
-      case 'camera':
-        return AudioInputType.camera;
-      case 'xlr':
-        return AudioInputType.xlr;
       case 'internal mic':
       case 'internal':
         return AudioInputType.internalMic;
-      case 'none':
-        return AudioInputType.none;
       default:
-        return AudioInputType.mic;
+        // Return none for truly unknown values rather than guessing
+        return AudioInputType.none;
     }
   }
 }

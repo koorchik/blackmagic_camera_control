@@ -276,6 +276,26 @@ class CameraApiClient {
 
   // ========== AUDIO CONTROL ==========
 
+  /// Get total number of audio channels available
+  Future<int> getAudioChannelCount() async {
+    try {
+      final data = await _get(ApiEndpoints.audioChannels);
+      return data['channels'] as int? ?? 2;
+    } on FeatureNotSupportedException {
+      return 2; // Default fallback
+    }
+  }
+
+  /// Get channel availability status
+  Future<bool> getAudioChannelAvailable(int channelIndex) async {
+    try {
+      final data = await _get(ApiEndpoints.audioChannelAvailable(channelIndex));
+      return data['available'] as bool? ?? true;
+    } on FeatureNotSupportedException {
+      return true; // Assume available if endpoint not supported
+    }
+  }
+
   /// Get audio level for a channel (meter reading)
   Future<double> getAudioLevel(int channelIndex) async {
     final data = await _get(ApiEndpoints.audioChannelLevel(channelIndex));
@@ -287,58 +307,6 @@ class CameraApiClient {
   Future<Map<String, dynamic>> getAudioLevelFull(int channelIndex) async {
     final data = await _get(ApiEndpoints.audioChannelLevel(channelIndex));
     return data;
-  }
-
-  /// Get audio gain for a channel
-  /// Returns a map with: gain (dB) and normalised (0-1)
-  Future<Map<String, dynamic>> getAudioGain(int channelIndex) async {
-    // Try dedicated gain endpoint first
-    try {
-      final data = await _get(ApiEndpoints.audioChannelGain(channelIndex));
-      print('[Audio] Gain endpoint returned: $data');
-      return data;
-    } catch (e) {
-      print('[Audio] Gain endpoint failed: $e');
-    }
-
-    // Fallback: try to get gain from the level endpoint
-    try {
-      final levelData = await _get(ApiEndpoints.audioChannelLevel(channelIndex));
-      print('[Audio] Level endpoint returned: $levelData');
-      // Some cameras include gain in the level response
-      if (levelData.containsKey('gain') || levelData.containsKey('inputGain')) {
-        return {
-          'gain': levelData['gain'] ?? levelData['inputGain'] ?? 0.0,
-          'normalised': levelData['gainNormalised'] ?? levelData['inputGainNormalised'] ?? 0.5,
-        };
-      }
-    } catch (e) {
-      print('[Audio] Level endpoint failed: $e');
-    }
-
-    // Fallback: try to get gain from input description
-    try {
-      final descData = await _get(ApiEndpoints.audioChannelInputDescription(channelIndex));
-      print('[Audio] Input description returned: $descData');
-      // Input description might contain current gain
-      if (descData.containsKey('gain') || descData.containsKey('currentGain')) {
-        final gainDb = (descData['gain'] ?? descData['currentGain'] as num?)?.toDouble() ?? 0.0;
-        final minGain = (descData['gainRange']?['min'] as num?)?.toDouble() ?? -60.0;
-        final maxGain = (descData['gainRange']?['max'] as num?)?.toDouble() ?? 24.0;
-        // Calculate normalized value from dB
-        final normalised = (gainDb - minGain) / (maxGain - minGain);
-        return {
-          'gain': gainDb,
-          'normalised': normalised.clamp(0.0, 1.0),
-        };
-      }
-    } catch (e) {
-      print('[Audio] Input description failed: $e');
-    }
-
-    // Return default if not available
-    print('[Audio] No gain data found, using defaults');
-    return {'gain': 0.0, 'normalised': 0.5};
   }
 
   /// Get audio input type for a channel
@@ -358,22 +326,22 @@ class CameraApiClient {
   /// Get phantom power state for a channel
   Future<bool> getPhantomPower(int channelIndex) async {
     final data = await _get(ApiEndpoints.audioChannelPhantom(channelIndex));
-    return data['phantomPower'] as bool? ?? false;
+    return data['enabled'] as bool? ?? false;
   }
 
   /// Set phantom power state for a channel
   Future<void> setPhantomPower(int channelIndex, bool enabled) async {
     await _put(ApiEndpoints.audioChannelPhantom(channelIndex), {
-      'phantomPower': enabled,
+      'enabled': enabled,
     });
   }
 
   /// Get supported inputs for a channel
-  Future<List<String>> getSupportedInputs(int channelIndex) async {
+  /// Returns a list of supported input info objects with 'input' (string) and 'available' (bool)
+  Future<List<Map<String, dynamic>>> getSupportedInputs(int channelIndex) async {
     try {
-      final data = await _get(ApiEndpoints.audioChannelSupportedInputs(channelIndex));
-      final inputs = data['supportedInputs'] as List<dynamic>?;
-      return inputs?.map((e) => e.toString()).toList() ?? [];
+      final data = await _getArray(ApiEndpoints.audioChannelSupportedInputs(channelIndex));
+      return data.map((e) => e as Map<String, dynamic>).toList();
     } on FeatureNotSupportedException {
       return [];
     }
@@ -1010,6 +978,20 @@ class CameraApiClient {
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
+    } else if (response.statusCode == 404) {
+      throw FeatureNotSupportedException(endpoint);
+    } else {
+      throw ApiException('GET $endpoint failed: ${response.statusCode}');
+    }
+  }
+
+  Future<List<dynamic>> _getArray(String endpoint) async {
+    final response = await _httpClient
+        .get(Uri.parse('$_baseUrl$endpoint'))
+        .timeout(Durations.connectionTimeout);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as List<dynamic>;
     } else if (response.statusCode == 404) {
       throw FeatureNotSupportedException(endpoint);
     } else {

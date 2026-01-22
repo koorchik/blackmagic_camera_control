@@ -44,10 +44,9 @@ class ApiEndpoints {
   static const String slateNextClip = '/control/api/v1/slates/nextClip';
 
   // Audio endpoints
+  static const String audioChannels = '/control/api/v1/audio/channels';
   static String audioChannelLevel(int index) =>
       '/control/api/v1/audio/channel/$index/level';
-  static String audioChannelGain(int index) =>
-      '/control/api/v1/audio/channel/$index/gain';
   static String audioChannelInput(int index) =>
       '/control/api/v1/audio/channel/$index/input';
   static String audioChannelPhantom(int index) =>
@@ -60,6 +59,8 @@ class ApiEndpoints {
       '/control/api/v1/audio/channel/$index/padding';
   static String audioChannelInputDescription(int index) =>
       '/control/api/v1/audio/channel/$index/input/description';
+  static String audioChannelAvailable(int index) =>
+      '/control/api/v1/audio/channel/$index/available';
 
   // Media endpoints
   static const String mediaWorkingSet = '/control/api/v1/media/workingset';

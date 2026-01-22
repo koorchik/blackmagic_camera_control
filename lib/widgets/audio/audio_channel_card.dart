@@ -253,8 +253,19 @@ class _AudioChannelCardState extends State<AudioChannelCard> {
   }
 
   Widget _buildOptionsSection(BuildContext context) {
-    final phantomAvailable = channel.inputType == AudioInputType.mic ||
-        channel.inputType == AudioInputType.xlr;
+    // Phantom power is available for mic and XLR inputs
+    final phantomAvailable = switch (channel.inputType) {
+      AudioInputType.mic ||
+      AudioInputType.micLeft ||
+      AudioInputType.micRight ||
+      AudioInputType.micMono ||
+      AudioInputType.xlr ||
+      AudioInputType.xlrLeft ||
+      AudioInputType.xlrRight ||
+      AudioInputType.xlrMono =>
+        true,
+      _ => false,
+    };
 
     return Container(
       padding: const EdgeInsets.all(12),
