@@ -38,11 +38,12 @@ enum FrameGuideRatio {
   final double value;
 }
 
-/// Frame grid types
+/// Frame grid types (per API spec: Thirds, Crosshair, Dot, Horizon)
+/// Note: Horizon requires accelerometer sensor, not available on all cameras
 enum FrameGridType {
   thirds('Thirds', 'Rule of Thirds'),
   crosshair('Crosshair', 'Center Crosshair'),
-  centerDot('CenterDot', 'Center Dot');
+  dot('Dot', 'Center Dot');
 
   const FrameGridType(this.code, this.label);
   final String code;

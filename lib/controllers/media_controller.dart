@@ -3,12 +3,7 @@ import 'base_controller.dart';
 
 /// Controller for media-related operations.
 class MediaController extends BaseController {
-  MediaController({
-    required super.getState,
-    required super.updateState,
-    required super.setError,
-    required super.getService,
-  });
+  MediaController(super.context);
 
   /// Fetch fresh media state
   Future<void> refresh() async {

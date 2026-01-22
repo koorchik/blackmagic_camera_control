@@ -4,6 +4,7 @@ import 'camera_websocket.dart';
 import '../models/camera_state.dart';
 import '../models/camera_capabilities.dart';
 import '../utils/constants.dart';
+import '../utils/debouncer.dart';
 
 export 'camera_api_client.dart' show ApiException, FeatureNotSupportedException;
 
@@ -20,8 +21,8 @@ class CameraService {
   final CameraApiClient _apiClient;
   final CameraWebSocket _webSocket;
 
-  Timer? _debounceTimer;
-  Timer? _colorDebounceTimer;
+  final Debouncer _sliderDebouncer = Debouncer(Durations.sliderDebounce);
+  final Debouncer _colorDebouncer = Debouncer(Durations.colorCorrectionDebounce);
 
   /// Get the API client for direct access
   CameraApiClient get api => _apiClient;
@@ -160,9 +161,6 @@ class CameraService {
 
   /// Get slate/metadata for next clip
   Future<SlateState> getSlate() => _apiClient.getSlate();
-
-  /// Set slate/metadata for next clip
-  Future<void> setSlate(SlateState slate) => _apiClient.setSlate(slate);
 
   /// Update specific slate fields
   Future<void> updateSlate(Map<String, dynamic> fields) =>
@@ -321,10 +319,6 @@ class CameraService {
   /// Get all media devices
   Future<List<MediaDevice>> getMediaDevices() => _apiClient.getMediaDevices();
 
-  /// Get a specific media device
-  Future<MediaDevice> getMediaDevice(String deviceName) =>
-      _apiClient.getMediaDevice(deviceName);
-
   /// Fetch initial media state
   Future<MediaState> fetchMediaState() async {
     final devices = await _safeCall(() => getMediaDevices(), <MediaDevice>[]);
@@ -346,120 +340,61 @@ class CameraService {
 
   // ========== MONITORING CONTROL ==========
 
-  /// Get available displays
-  Future<List<String>> getAvailableDisplays() =>
-      _apiClient.getAvailableDisplays();
-
-  /// Get focus assist settings for a display
-  Future<FocusAssistState> getFocusAssist(String displayName) =>
-      _apiClient.getFocusAssist(displayName);
-
   /// Set focus assist enabled for a display (per-display toggle)
   Future<void> setFocusAssistEnabled(String displayName, bool enabled) =>
       _apiClient.setFocusAssistEnabled(displayName, enabled);
-
-  /// Get global focus assist settings (camera-wide)
-  Future<FocusAssistState> getGlobalFocusAssist() =>
-      _apiClient.getGlobalFocusAssist();
 
   /// Set global focus assist settings (camera-wide: mode, color, intensity)
   Future<void> setGlobalFocusAssist(FocusAssistState state) =>
       _apiClient.setGlobalFocusAssist(state);
 
-  /// Get zebra enabled for a display
-  Future<bool> getZebraEnabled(String displayName) =>
-      _apiClient.getZebraEnabled(displayName);
-
   /// Set zebra enabled for a display
   Future<void> setZebraEnabled(String displayName, bool enabled) =>
       _apiClient.setZebraEnabled(displayName, enabled);
-
-  /// Get frame guides settings for a display
-  Future<FrameGuidesState> getFrameGuides(String displayName) =>
-      _apiClient.getFrameGuides(displayName);
 
   /// Set frame guides settings for a display
   Future<void> setFrameGuides(String displayName, FrameGuidesState state) =>
       _apiClient.setFrameGuides(displayName, state);
 
-  /// Get frame guide ratio (camera-wide setting)
-  Future<String> getFrameGuideRatio() => _apiClient.getFrameGuideRatio();
-
   /// Set frame guide ratio (camera-wide setting)
   Future<void> setFrameGuideRatio(String ratio) =>
       _apiClient.setFrameGuideRatio(ratio);
-
-  /// Get clean feed enabled for a display
-  Future<bool> getCleanFeedEnabled(String displayName) =>
-      _apiClient.getCleanFeedEnabled(displayName);
 
   /// Set clean feed enabled for a display
   Future<void> setCleanFeedEnabled(String displayName, bool enabled) =>
       _apiClient.setCleanFeedEnabled(displayName, enabled);
 
-  /// Get display LUT enabled for a display
-  Future<bool> getDisplayLutEnabled(String displayName) =>
-      _apiClient.getDisplayLutEnabled(displayName);
-
   /// Set display LUT enabled for a display
   Future<void> setDisplayLutEnabled(String displayName, bool enabled) =>
       _apiClient.setDisplayLutEnabled(displayName, enabled);
-
-  /// Get program feed display enabled
-  Future<bool> getProgramFeedEnabled() => _apiClient.getProgramFeedEnabled();
 
   /// Set program feed display enabled
   Future<void> setProgramFeedEnabled(bool enabled) =>
       _apiClient.setProgramFeedEnabled(enabled);
 
-  /// Get color bars enabled
-  Future<bool> getColorBarsEnabled() => _apiClient.getColorBarsEnabled();
-
   /// Set color bars enabled
   Future<void> setColorBarsEnabled(bool enabled) =>
       _apiClient.setColorBarsEnabled(enabled);
-
-  /// Get false color enabled for a display
-  Future<bool> getFalseColorEnabled(String displayName) =>
-      _apiClient.getFalseColorEnabled(displayName);
 
   /// Set false color enabled for a display
   Future<void> setFalseColorEnabled(String displayName, bool enabled) =>
       _apiClient.setFalseColorEnabled(displayName, enabled);
 
-  /// Get safe area enabled for a display
-  Future<bool> getSafeAreaEnabled(String displayName) =>
-      _apiClient.getSafeAreaEnabled(displayName);
-
   /// Set safe area enabled for a display
   Future<void> setSafeAreaEnabled(String displayName, bool enabled) =>
       _apiClient.setSafeAreaEnabled(displayName, enabled);
-
-  /// Get safe area percentage (camera-wide)
-  Future<int> getSafeAreaPercent() => _apiClient.getSafeAreaPercent();
 
   /// Set safe area percentage (camera-wide)
   Future<void> setSafeAreaPercent(int percent) =>
       _apiClient.setSafeAreaPercent(percent);
 
-  /// Get frame grids enabled for a display
-  Future<bool> getFrameGridsEnabled(String displayName) =>
-      _apiClient.getFrameGridsEnabled(displayName);
-
   /// Set frame grids enabled for a display
   Future<void> setFrameGridsEnabled(String displayName, bool enabled) =>
       _apiClient.setFrameGridsEnabled(displayName, enabled);
 
-  /// Get global frame grids settings (camera-wide)
-  Future<List<String>> getGlobalFrameGrids() =>
-      _apiClient.getGlobalFrameGrids();
-
   /// Set global frame grids settings (camera-wide)
   Future<void> setGlobalFrameGrids(List<String> grids) =>
       _apiClient.setGlobalFrameGrids(grids);
-
-  /// Get current video format
-  Future<Map<String, dynamic>> getVideoFormat() => _apiClient.getVideoFormat();
 
   /// Set video format (tries separate API first, falls back to combined API)
   Future<void> setVideoFormat(String name, String frameRate) async {
@@ -487,9 +422,6 @@ class CameraService {
     await _apiClient.setSystemFormat(currentFormat);
   }
 
-  /// Get current codec format
-  Future<Map<String, dynamic>> getCodecFormat() => _apiClient.getCodecFormat();
-
   /// Set codec format (tries separate API first, falls back to combined API)
   Future<void> setCodecFormat(String codec, String container) async {
     // Try separate codec format API first
@@ -514,39 +446,28 @@ class CameraService {
     await _apiClient.setSystemFormat(currentFormat);
   }
 
-  /// Get current system format (combined API)
-  Future<Map<String, dynamic>> getSystemFormat() => _apiClient.getSystemFormat();
-
-  /// Set system format (combined API)
-  Future<void> setSystemFormat(Map<String, dynamic> format) =>
-      _apiClient.setSystemFormat(format);
-
-  /// Get supported formats (combined API)
-  Future<List<Map<String, dynamic>>> getSupportedFormats() =>
-      _apiClient.getSupportedFormats();
-
   /// Fetch initial monitoring state
   Future<MonitoringState> fetchMonitoringState() async {
-    final displays = await _safeCall(() => getAvailableDisplays(), <String>[]);
+    final displays = await _safeCall(() => _apiClient.getAvailableDisplays(), <String>[]);
     final displayStates = <String, DisplayState>{};
 
     for (final name in displays) {
       try {
         final focusAssist =
-            await _safeCall(() => getFocusAssist(name), const FocusAssistState());
-        final zebraEnabled = await _safeCall(() => getZebraEnabled(name), false);
+            await _safeCall(() => _apiClient.getFocusAssist(name), const FocusAssistState());
+        final zebraEnabled = await _safeCall(() => _apiClient.getZebraEnabled(name), false);
         final frameGuides =
-            await _safeCall(() => getFrameGuides(name), const FrameGuidesState());
+            await _safeCall(() => _apiClient.getFrameGuides(name), const FrameGuidesState());
         final cleanFeedEnabled =
-            await _safeCall(() => getCleanFeedEnabled(name), false);
+            await _safeCall(() => _apiClient.getCleanFeedEnabled(name), false);
         final displayLutEnabled =
-            await _safeCall(() => getDisplayLutEnabled(name), false);
+            await _safeCall(() => _apiClient.getDisplayLutEnabled(name), false);
         final falseColorEnabled =
-            await _safeCall(() => getFalseColorEnabled(name), false);
+            await _safeCall(() => _apiClient.getFalseColorEnabled(name), false);
         final safeAreaEnabled =
-            await _safeCall(() => getSafeAreaEnabled(name), false);
+            await _safeCall(() => _apiClient.getSafeAreaEnabled(name), false);
         final frameGridsEnabled =
-            await _safeCall(() => getFrameGridsEnabled(name), false);
+            await _safeCall(() => _apiClient.getFrameGridsEnabled(name), false);
 
         displayStates[name] = DisplayState(
           name: name,
@@ -566,17 +487,17 @@ class CameraService {
 
     // Fetch camera-wide settings
     final programFeedEnabled =
-        await _safeCall(() => getProgramFeedEnabled(), false);
+        await _safeCall(() => _apiClient.getProgramFeedEnabled(), false);
 
     // Try separate video/codec format APIs first, fall back to combined API
     var videoFormatData =
-        await _safeCall(() => getVideoFormat(), <String, dynamic>{});
+        await _safeCall(() => _apiClient.getVideoFormat(), <String, dynamic>{});
     var codecFormatData =
-        await _safeCall(() => getCodecFormat(), <String, dynamic>{});
+        await _safeCall(() => _apiClient.getCodecFormat(), <String, dynamic>{});
 
     // If separate APIs didn't work, try combined format API
     if (videoFormatData.isEmpty && codecFormatData.isEmpty) {
-      final systemFormat = await _safeCall(() => getSystemFormat(), <String, dynamic>{});
+      final systemFormat = await _safeCall(() => _apiClient.getSystemFormat(), <String, dynamic>{});
       if (systemFormat.isNotEmpty) {
         videoFormatData = systemFormat;
         codecFormatData = systemFormat;
@@ -588,7 +509,7 @@ class CameraService {
 
     // Fetch frame guide ratio (camera-wide setting)
     final frameGuideRatioStr =
-        await _safeCall(() => getFrameGuideRatio(), '16:9');
+        await _safeCall(() => _apiClient.getFrameGuideRatio(), '16:9');
     final frameGuideRatio = FrameGuideRatio.values.cast<FrameGuideRatio?>().firstWhere(
       (r) => r?.label == frameGuideRatioStr,
       orElse: () => FrameGuideRatio.ratio16x9,
@@ -596,19 +517,19 @@ class CameraService {
 
     // Fetch global focus assist settings (camera-wide)
     final globalFocusAssist =
-        await _safeCall(() => getGlobalFocusAssist(), const FocusAssistState());
+        await _safeCall(() => _apiClient.getGlobalFocusAssist(), const FocusAssistState());
 
     // Fetch color bars enabled (camera-wide)
     final colorBarsEnabled =
-        await _safeCall(() => getColorBarsEnabled(), false);
+        await _safeCall(() => _apiClient.getColorBarsEnabled(), false);
 
     // Fetch safe area percent (camera-wide)
     final safeAreaPercent =
-        await _safeCall(() => getSafeAreaPercent(), 80);
+        await _safeCall(() => _apiClient.getSafeAreaPercent(), 80);
 
     // Fetch active frame grids (camera-wide)
     final frameGridStrings =
-        await _safeCall(() => getGlobalFrameGrids(), <String>[]);
+        await _safeCall(() => _apiClient.getGlobalFrameGrids(), <String>[]);
     final activeFrameGrids = frameGridStrings
         .map((g) => FrameGridType.fromString(g))
         .toList();
@@ -705,9 +626,6 @@ class CameraService {
 
   // ========== COLOR CORRECTION CONTROL ==========
 
-  /// Get color lift (shadows)
-  Future<ColorWheelValues> getColorLift() => _apiClient.getColorLift();
-
   /// Set color lift (shadows)
   Future<void> setColorLift(ColorWheelValues values) =>
       _apiClient.setColorLift(values);
@@ -716,9 +634,6 @@ class CameraService {
   void setColorLiftDebounced(ColorWheelValues values) {
     _colorDebounce(() => _apiClient.setColorLift(values));
   }
-
-  /// Get color gamma (midtones)
-  Future<ColorWheelValues> getColorGamma() => _apiClient.getColorGamma();
 
   /// Set color gamma (midtones)
   Future<void> setColorGamma(ColorWheelValues values) =>
@@ -729,9 +644,6 @@ class CameraService {
     _colorDebounce(() => _apiClient.setColorGamma(values));
   }
 
-  /// Get color gain (highlights)
-  Future<ColorWheelValues> getColorGain() => _apiClient.getColorGain();
-
   /// Set color gain (highlights)
   Future<void> setColorGain(ColorWheelValues values) =>
       _apiClient.setColorGain(values);
@@ -740,10 +652,6 @@ class CameraService {
   void setColorGainDebounced(ColorWheelValues values) {
     _colorDebounce(() => _apiClient.setColorGain(values));
   }
-
-  /// Get color properties (hue and saturation) from combined endpoint
-  Future<Map<String, double>> getColorProperties() =>
-      _apiClient.getColorProperties();
 
   /// Set color properties (hue and/or saturation)
   Future<void> setColorProperties({double? hue, double? saturation}) =>
@@ -754,9 +662,6 @@ class CameraService {
     _colorDebounce(() => _apiClient.setColorProperties(hue: hue, saturation: saturation));
   }
 
-  /// Get color offset
-  Future<ColorWheelValues> getColorOffset() => _apiClient.getColorOffset();
-
   /// Set color offset
   Future<void> setColorOffset(ColorWheelValues values) =>
       _apiClient.setColorOffset(values);
@@ -766,10 +671,6 @@ class CameraService {
     _colorDebounce(() => _apiClient.setColorOffset(values));
   }
 
-  /// Get contrast with pivot
-  Future<Map<String, dynamic>> getColorContrastWithPivot() =>
-      _apiClient.getColorContrastWithPivot();
-
   /// Set contrast with pivot
   Future<void> setColorContrastWithPivot(double adjust, double pivot) =>
       _apiClient.setColorContrastWithPivot(adjust, pivot);
@@ -778,10 +679,6 @@ class CameraService {
   void setColorContrastWithPivotDebounced(double adjust, double pivot) {
     _colorDebounce(() => _apiClient.setColorContrastWithPivot(adjust, pivot));
   }
-
-  /// Get luma contribution
-  Future<double> getColorLumaContribution() =>
-      _apiClient.getColorLumaContribution();
 
   /// Set luma contribution
   Future<void> setColorLumaContribution(double value) =>
@@ -795,26 +692,26 @@ class CameraService {
   /// Fetch initial color correction state
   Future<ColorCorrectionState> fetchColorCorrectionState() async {
     // Fetch color wheels
-    final lift = await _safeCall(() => getColorLift(), const ColorWheelValues());
-    final gamma = await _safeCall(() => getColorGamma(), const ColorWheelValues());
-    final gain = await _safeCall(() => getColorGain(), ColorWheelValues.gainDefault);
-    final offset = await _safeCall(() => getColorOffset(), const ColorWheelValues());
+    final lift = await _safeCall(() => _apiClient.getColorLift(), const ColorWheelValues());
+    final gamma = await _safeCall(() => _apiClient.getColorGamma(), const ColorWheelValues());
+    final gain = await _safeCall(() => _apiClient.getColorGain(), ColorWheelValues.gainDefault);
+    final offset = await _safeCall(() => _apiClient.getColorOffset(), const ColorWheelValues());
 
     // Fetch combined hue/saturation from /colorCorrection/color
     final colorProps = await _safeCall(
-        () => getColorProperties(), {'hue': 0.0, 'saturation': 1.0});
+        () => _apiClient.getColorProperties(), {'hue': 0.0, 'saturation': 1.0});
     final hue = colorProps['hue'] ?? 0.0;
     final saturation = colorProps['saturation'] ?? 1.0;
 
     // Fetch contrast with pivot from /colorCorrection/contrast
     final contrastData = await _safeCall(
-        () => getColorContrastWithPivot(), <String, dynamic>{});
+        () => _apiClient.getColorContrastWithPivot(), <String, dynamic>{});
     // API returns 'adjust' for contrast value, 'pivot' for pivot point
     final contrast = (contrastData['adjust'] as num?)?.toDouble() ?? 1.0;
     final contrastPivot = (contrastData['pivot'] as num?)?.toDouble() ?? 0.5;
 
     // Fetch luma contribution
-    final lumaContribution = await _safeCall(() => getColorLumaContribution(), 1.0);
+    final lumaContribution = await _safeCall(() => _apiClient.getColorLumaContribution(), 1.0);
 
     return ColorCorrectionState(
       lift: lift,
@@ -906,7 +803,7 @@ class CameraService {
 
     // If separate format APIs returned nothing, try combined format API
     if (formats.isEmpty && codecs.isEmpty) {
-      final combinedFormats = await _safeCall(() => getSupportedFormats(), <Map<String, dynamic>>[]);
+      final combinedFormats = await _safeCall(() => _apiClient.getSupportedFormats(), <Map<String, dynamic>>[]);
       if (combinedFormats.isNotEmpty) {
         final parsed = _parseCombinedFormats(combinedFormats);
         formats = parsed['formats'] as List<Map<String, dynamic>>;
@@ -981,17 +878,11 @@ class CameraService {
   }
 
   void _colorDebounce(Future<void> Function() action) {
-    _colorDebounceTimer?.cancel();
-    _colorDebounceTimer = Timer(Durations.colorCorrectionDebounce, () {
-      action();
-    });
+    _colorDebouncer.call(() => action());
   }
 
   void _debounce(Future<void> Function() action) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(Durations.sliderDebounce, () {
-      action();
-    });
+    _sliderDebouncer.call(() => action());
   }
 
   Future<T> _safeCall<T>(Future<T> Function() call, T defaultValue) async {
@@ -1004,8 +895,8 @@ class CameraService {
 
   /// Dispose of resources
   void dispose() {
-    _debounceTimer?.cancel();
-    _colorDebounceTimer?.cancel();
+    _sliderDebouncer.dispose();
+    _colorDebouncer.dispose();
     _apiClient.dispose();
     _webSocket.dispose();
   }

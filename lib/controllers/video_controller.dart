@@ -2,12 +2,7 @@ import 'base_controller.dart';
 
 /// Controller for video-related operations (ISO, shutter, white balance).
 class VideoController extends BaseController {
-  VideoController({
-    required super.getState,
-    required super.updateState,
-    required super.setError,
-    required super.getService,
-  });
+  VideoController(super.context);
 
   /// Set ISO value (optimistic update)
   void setIso(int value, {Future<void> Function()? onComplete}) {

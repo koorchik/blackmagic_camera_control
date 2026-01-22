@@ -4,12 +4,7 @@ import 'base_controller.dart';
 
 /// Controller for monitoring-related operations.
 class MonitoringController extends BaseController {
-  MonitoringController({
-    required super.getState,
-    required super.updateState,
-    required super.setError,
-    required super.getService,
-  });
+  MonitoringController(super.context);
 
   /// Helper to update a boolean property on the current display with optimistic update.
   void _updateCurrentDisplayBool({

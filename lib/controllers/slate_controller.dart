@@ -3,12 +3,7 @@ import 'base_controller.dart';
 
 /// Controller for slate/metadata operations.
 class SlateController extends BaseController {
-  SlateController({
-    required super.getState,
-    required super.updateState,
-    required super.setError,
-    required super.getService,
-  });
+  SlateController(super.context);
 
   /// Update slate scene
   void setScene(String scene) {

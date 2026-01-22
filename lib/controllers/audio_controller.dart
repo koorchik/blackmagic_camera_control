@@ -4,12 +4,7 @@ import 'base_controller.dart';
 
 /// Controller for audio-related operations.
 class AudioController extends BaseController {
-  AudioController({
-    required super.getState,
-    required super.updateState,
-    required super.setError,
-    required super.getService,
-  });
+  AudioController(super.context);
 
   Timer? _levelPollingTimer;
   bool _isPolling = false;

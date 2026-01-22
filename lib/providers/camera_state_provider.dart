@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/camera_state.dart';
 import '../models/camera_capabilities.dart';
 import '../services/camera_service.dart';
+import '../controllers/controller_context.dart';
 import '../controllers/lens_controller.dart';
 import '../controllers/video_controller.dart';
 import '../controllers/transport_controller.dart';
@@ -56,60 +57,21 @@ class CameraStateProvider extends ChangeNotifier {
   String? get error => _error;
 
   void _initControllers() {
-    _lensController = LensController(
+    final ctx = ControllerContext(
       getState: () => _state,
       updateState: _updateState,
       setError: _setError,
       getService: () => _cameraService,
     );
-    _videoController = VideoController(
-      getState: () => _state,
-      updateState: _updateState,
-      setError: _setError,
-      getService: () => _cameraService,
-    );
-    _transportController = TransportController(
-      getState: () => _state,
-      updateState: _updateState,
-      setError: _setError,
-      getService: () => _cameraService,
-    );
-    _slateController = SlateController(
-      getState: () => _state,
-      updateState: _updateState,
-      setError: _setError,
-      getService: () => _cameraService,
-    );
-    _audioController = AudioController(
-      getState: () => _state,
-      updateState: _updateState,
-      setError: _setError,
-      getService: () => _cameraService,
-    );
-    _mediaController = MediaController(
-      getState: () => _state,
-      updateState: _updateState,
-      setError: _setError,
-      getService: () => _cameraService,
-    );
-    _monitoringController = MonitoringController(
-      getState: () => _state,
-      updateState: _updateState,
-      setError: _setError,
-      getService: () => _cameraService,
-    );
-    _colorController = ColorController(
-      getState: () => _state,
-      updateState: _updateState,
-      setError: _setError,
-      getService: () => _cameraService,
-    );
-    _presetController = PresetController(
-      getState: () => _state,
-      updateState: _updateState,
-      setError: _setError,
-      getService: () => _cameraService,
-    );
+    _lensController = LensController(ctx);
+    _videoController = VideoController(ctx);
+    _transportController = TransportController(ctx);
+    _slateController = SlateController(ctx);
+    _audioController = AudioController(ctx);
+    _mediaController = MediaController(ctx);
+    _monitoringController = MonitoringController(ctx);
+    _colorController = ColorController(ctx);
+    _presetController = PresetController(ctx);
   }
 
   void _updateState(CameraState newState) {

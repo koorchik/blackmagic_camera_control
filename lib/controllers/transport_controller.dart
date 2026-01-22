@@ -2,12 +2,7 @@ import 'base_controller.dart';
 
 /// Controller for transport-related operations (recording, timecode).
 class TransportController extends BaseController {
-  TransportController({
-    required super.getState,
-    required super.updateState,
-    required super.setError,
-    required super.getService,
-  });
+  TransportController(super.context);
 
   /// Start recording
   Future<void> startRecording() async {

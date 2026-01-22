@@ -27,27 +27,36 @@ Testing uses `mocktail` for mocking.
 **State Management**: Provider pattern with two main providers:
 
 - `CameraConnectionProvider` - Manages connection state, camera IP persistence, and mDNS discovery
-- `CameraStateProvider` - Holds camera state, manages 8 domain controllers, subscribes to WebSocket updates
+- `CameraStateProvider` - Holds camera state, manages 9 domain controllers, subscribes to WebSocket updates
 
-**Controllers** (`lib/controllers/`): Domain-specific logic extracted from provider. Each controller receives callbacks for state access/mutation via constructor injection:
+**Controllers** (`lib/controllers/`): Domain-specific logic extracted from provider. All controllers extend `BaseController` and receive a shared `ControllerContext` for state access/mutation:
 
 ```dart
-LensController({
-  required this.getState,      // CameraState Function()
-  required this.updateState,   // void Function(CameraState)
-  required this.setError,      // void Function(String)
-  required this.getService,    // CameraService? Function()
-})
+// ControllerContext bundles all callbacks needed by controllers
+final ctx = ControllerContext(
+  getState: () => _state,
+  updateState: _updateState,
+  setError: _setError,
+  getService: () => _cameraService,
+);
+
+// Controllers use simplified constructor
+_lensController = LensController(ctx);
+_videoController = VideoController(ctx);
 ```
 
-Controllers: `LensController`, `VideoController`, `TransportController`, `SlateController`, `AudioController`, `MediaController`, `MonitoringController`, `ColorController`
+Controllers: `LensController`, `VideoController`, `TransportController`, `SlateController`, `AudioController`, `MediaController`, `MonitoringController`, `ColorController`, `PresetController`
 
 **Service Layer** (`lib/services/`):
 
 - `CameraApiClient` - REST API client for GET/PUT operations to camera endpoints
 - `CameraWebSocket` - WebSocket client for real-time state updates from camera
-- `CameraService` - Facade combining both clients, adds debouncing (50ms sliders, 100ms color)
+- `CameraService` - Facade combining both clients, exposes `api` accessor for direct API access, adds debouncing via `Debouncer` utility (50ms sliders, 100ms color)
 - `CameraDiscoveryService` - mDNS-based camera autodiscovery with validation
+
+**Utilities** (`lib/utils/`):
+
+- `Debouncer` - Generic debouncer utility for rate-limiting function calls (used by CameraService)
 
 **Data Flow**:
 
@@ -81,7 +90,15 @@ Controllers: `LensController`, `VideoController`, `TransportController`, `SlateC
 - **Color correction debouncing**: 100ms for stability
 - **WebSocket state merging**: Partial updates merged with existing state in provider
 - **404 handling**: Indicates unsupported camera features, handled gracefully
-- **Optimistic UI**: State changes immediately, API calls in background
+- **Optimistic UI**: State changes immediately, API calls in background. Use `BaseController.optimisticUpdate()` helper for standard pattern with automatic rollback on error:
+  ```dart
+  optimisticUpdate(
+    updater: (state) => state.copyWith(video: state.video.copyWith(iso: value)),
+    apiCall: () => getService()!.setIso(value),
+    errorMessage: 'Failed to set ISO',
+  );
+  ```
+- **Direct API access**: Controllers can use `getService()?.api.method()` for simple read operations (e.g., `service.api.getShutter()`)
 - **Persistence**: Last camera IP stored via SharedPreferences (`PrefsKeys.lastCameraIp`)
 
 ## Reusable UI Components
@@ -117,6 +134,22 @@ Use widgets from `lib/widgets/common/` to maintain consistency:
 - `Styles.borderRadiusSmall` - Standard small border radius (8.0)
 - `Styles.sliderLabelFontSize` - Slider sparse label font size (10.0)
 - `Styles.sliderValueFontSize` - Slider value display font size (14.0)
+- `Durations.sliderDebounce` - 50ms debounce for slider controls
+- `Durations.colorCorrectionDebounce` - 100ms debounce for color correction
+
+### Adding New Controllers
+
+1. Create controller extending `BaseController` with `YourController(super.context)`
+2. Add controller field and getter to `CameraStateProvider`
+3. Initialize in `_initControllers()` using the shared `ControllerContext`
+
+### Using Debouncer
+
+```dart
+final _debouncer = Debouncer(Duration(milliseconds: 100));
+_debouncer.call(() => performAction());
+_debouncer.dispose(); // Clean up when done
+```
 
 ## Camera REST API Docs
 

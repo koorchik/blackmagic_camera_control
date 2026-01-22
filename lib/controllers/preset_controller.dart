@@ -2,12 +2,7 @@ import 'base_controller.dart';
 
 /// Controller for preset-related operations.
 class PresetController extends BaseController {
-  PresetController({
-    required super.getState,
-    required super.updateState,
-    required super.setError,
-    required super.getService,
-  });
+  PresetController(super.context);
 
   /// Fetch preset list and active preset from camera
   Future<void> refresh() async {

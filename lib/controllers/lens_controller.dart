@@ -2,12 +2,7 @@ import 'base_controller.dart';
 
 /// Controller for lens-related operations (focus, iris, zoom, autofocus).
 class LensController extends BaseController {
-  LensController({
-    required super.getState,
-    required super.updateState,
-    required super.setError,
-    required super.getService,
-  });
+  LensController(super.context);
 
   /// Set focus - debounced API call only (no state update, for smooth dragging)
   void setFocusDebounced(double value) {

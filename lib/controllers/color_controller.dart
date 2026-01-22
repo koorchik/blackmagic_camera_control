@@ -3,12 +3,7 @@ import 'base_controller.dart';
 
 /// Controller for color correction operations.
 class ColorController extends BaseController {
-  ColorController({
-    required super.getState,
-    required super.updateState,
-    required super.setError,
-    required super.getService,
-  });
+  ColorController(super.context);
 
   /// Fetch fresh color correction state
   Future<void> refresh() async {
