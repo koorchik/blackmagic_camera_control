@@ -1,19 +1,14 @@
-import '../models/camera_state.dart';
-import '../services/camera_service.dart';
+import '../models/slate_state.dart';
+import 'base_controller.dart';
 
 /// Controller for slate/metadata operations.
-class SlateController {
+class SlateController extends BaseController {
   SlateController({
-    required this.getState,
-    required this.updateState,
-    required this.setError,
-    required this.getService,
+    required super.getState,
+    required super.updateState,
+    required super.setError,
+    required super.getService,
   });
-
-  final CameraState Function() getState;
-  final void Function(CameraState state) updateState;
-  final void Function(String error) setError;
-  final CameraService? Function() getService;
 
   /// Update slate scene
   void setScene(String scene) {

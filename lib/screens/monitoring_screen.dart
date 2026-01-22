@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/monitoring_state.dart';
 import '../providers/camera_state_provider.dart';
+import '../utils/constants.dart';
 import '../widgets/monitoring/display_selector.dart';
 import '../widgets/monitoring/focus_assist_control.dart';
 import '../widgets/monitoring/zebra_control.dart';
@@ -46,7 +47,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.monitor_outlined, size: 64, color: Colors.grey),
-              const SizedBox(height: 16),
+              Spacing.verticalLg,
               const Text(
                 'Monitoring not available',
                 style: TextStyle(
@@ -55,7 +56,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 8),
+              Spacing.verticalSm,
               Text(
                 'This camera does not support the monitoring REST API.\n'
                 'Monitoring controls require firmware 9.6+ and are only\n'
@@ -77,7 +78,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 800;
+        final isWide = constraints.maxWidth > Breakpoints.medium;
 
         if (isWide) {
           return SingleChildScrollView(
@@ -115,18 +116,18 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const DisplaySelector(),
-        const SizedBox(height: 16),
+        Spacing.verticalLg,
         if (monitoring.currentDisplay != null) ...[
           const FocusAssistControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const ZebraControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const FalseColorControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const FrameGuidesControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const SafeAreaControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const FrameGridsControl(),
         ],
       ],
@@ -139,14 +140,14 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
       children: [
         if (monitoring.currentDisplay != null) ...[
           const DisplayLutControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const CleanFeedControl(),
-          const SizedBox(height: 16),
+          Spacing.verticalLg,
         ],
         const ColorBarsControl(),
-        const SizedBox(height: 8),
+        Spacing.verticalSm,
         _buildCameraOutputSettings(),
-        const SizedBox(height: 16),
+        Spacing.verticalLg,
         const PresetSection(),
       ],
     );
@@ -157,24 +158,24 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const DisplaySelector(),
-        const SizedBox(height: 16),
+        Spacing.verticalLg,
         if (monitoring.currentDisplay != null) ...[
           const FocusAssistControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const ZebraControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const FalseColorControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const FrameGuidesControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const SafeAreaControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const FrameGridsControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const DisplayLutControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const CleanFeedControl(),
-          const SizedBox(height: 8),
+          Spacing.verticalSm,
           const ColorBarsControl(),
         ],
       ],
@@ -186,12 +187,12 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: EdgeInsets.symmetric(vertical: Spacing.sm),
           child: Row(
             children: [
               const Expanded(child: Divider()),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: Spacing.lg),
                 child: Text(
                   'Camera Output',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -203,11 +204,11 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        Spacing.verticalSm,
         const ProgramFeedControl(),
-        const SizedBox(height: 8),
+        Spacing.verticalSm,
         const VideoFormatSelector(),
-        const SizedBox(height: 8),
+        Spacing.verticalSm,
         const CodecFormatSelector(),
       ],
     );

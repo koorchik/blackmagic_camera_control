@@ -1,23 +1,47 @@
 import 'dart:async';
 import '../models/camera_state.dart';
-import '../services/camera_service.dart';
+import 'base_controller.dart';
 
 /// Controller for audio-related operations.
-class AudioController {
+class AudioController extends BaseController {
   AudioController({
-    required this.getState,
-    required this.updateState,
-    required this.setError,
-    required this.getService,
+    required super.getState,
+    required super.updateState,
+    required super.setError,
+    required super.getService,
   });
-
-  final CameraState Function() getState;
-  final void Function(CameraState state) updateState;
-  final void Function(String error) setError;
-  final CameraService? Function() getService;
 
   Timer? _levelPollingTimer;
   bool _isPolling = false;
+
+  /// Helper to update a boolean channel property with optimistic update and revert on error.
+  void _updateChannelBool({
+    required int channelIndex,
+    required bool Function(AudioChannelState) getValue,
+    required AudioChannelState Function(AudioChannelState, bool) copyWithValue,
+    required bool newValue,
+    required Future<void> Function() apiCall,
+    required String errorMessage,
+  }) {
+    final state = getState();
+    final channels = List<AudioChannelState>.from(state.audio.channels);
+    if (channelIndex >= channels.length) return;
+
+    final previousValue = getValue(channels[channelIndex]);
+    channels[channelIndex] = copyWithValue(channels[channelIndex], newValue);
+    updateState(state.copyWith(audio: state.audio.copyWith(channels: channels)));
+
+    apiCall().catchError((e) {
+      // Revert to previous value on error
+      final currentState = getState();
+      final currentChannels = List<AudioChannelState>.from(currentState.audio.channels);
+      if (channelIndex < currentChannels.length) {
+        currentChannels[channelIndex] = copyWithValue(currentChannels[channelIndex], previousValue);
+        updateState(currentState.copyWith(audio: currentState.audio.copyWith(channels: currentChannels)));
+      }
+      setError(errorMessage);
+    });
+  }
 
   /// Fetch fresh audio state
   Future<void> refresh() async {
@@ -59,27 +83,14 @@ class AudioController {
 
   /// Set phantom power for a channel
   void setPhantomPower(int channelIndex, bool enabled) {
-    final state = getState();
-    final channels = List<AudioChannelState>.from(state.audio.channels);
-    final previousValue = channelIndex < channels.length
-        ? channels[channelIndex].phantomPower
-        : false;
-
-    if (channelIndex < channels.length) {
-      channels[channelIndex] = channels[channelIndex].copyWith(phantomPower: enabled);
-      updateState(state.copyWith(audio: state.audio.copyWith(channels: channels)));
-    }
-
-    getService()?.setPhantomPower(channelIndex, enabled).catchError((e) {
-      // Revert to previous value on error
-      final currentState = getState();
-      final currentChannels = List<AudioChannelState>.from(currentState.audio.channels);
-      if (channelIndex < currentChannels.length) {
-        currentChannels[channelIndex] = currentChannels[channelIndex].copyWith(phantomPower: previousValue);
-        updateState(currentState.copyWith(audio: currentState.audio.copyWith(channels: currentChannels)));
-      }
-      setError('Phantom power not supported on this channel');
-    });
+    _updateChannelBool(
+      channelIndex: channelIndex,
+      getValue: (ch) => ch.phantomPower,
+      copyWithValue: (ch, v) => ch.copyWith(phantomPower: v),
+      newValue: enabled,
+      apiCall: () => getService()!.setPhantomPower(channelIndex, enabled),
+      errorMessage: 'Phantom power not supported on this channel',
+    );
   }
 
   /// Set audio gain/level for a channel - debounced API call (for smooth dragging)
@@ -104,52 +115,26 @@ class AudioController {
 
   /// Set low cut filter for a channel
   void setLowCutFilter(int channelIndex, bool enabled) {
-    final state = getState();
-    final channels = List<AudioChannelState>.from(state.audio.channels);
-    final previousValue = channelIndex < channels.length
-        ? channels[channelIndex].lowCutFilter
-        : false;
-
-    if (channelIndex < channels.length) {
-      channels[channelIndex] = channels[channelIndex].copyWith(lowCutFilter: enabled);
-      updateState(state.copyWith(audio: state.audio.copyWith(channels: channels)));
-    }
-
-    getService()?.setLowCutFilter(channelIndex, enabled).catchError((e) {
-      // Revert to previous value on error
-      final currentState = getState();
-      final currentChannels = List<AudioChannelState>.from(currentState.audio.channels);
-      if (channelIndex < currentChannels.length) {
-        currentChannels[channelIndex] = currentChannels[channelIndex].copyWith(lowCutFilter: previousValue);
-        updateState(currentState.copyWith(audio: currentState.audio.copyWith(channels: currentChannels)));
-      }
-      setError('Low cut filter not supported on this camera');
-    });
+    _updateChannelBool(
+      channelIndex: channelIndex,
+      getValue: (ch) => ch.lowCutFilter,
+      copyWithValue: (ch, v) => ch.copyWith(lowCutFilter: v),
+      newValue: enabled,
+      apiCall: () => getService()!.setLowCutFilter(channelIndex, enabled),
+      errorMessage: 'Low cut filter not supported on this camera',
+    );
   }
 
   /// Set padding for a channel
   void setPadding(int channelIndex, bool enabled) {
-    final state = getState();
-    final channels = List<AudioChannelState>.from(state.audio.channels);
-    final previousValue = channelIndex < channels.length
-        ? channels[channelIndex].padding
-        : false;
-
-    if (channelIndex < channels.length) {
-      channels[channelIndex] = channels[channelIndex].copyWith(padding: enabled);
-      updateState(state.copyWith(audio: state.audio.copyWith(channels: channels)));
-    }
-
-    getService()?.setPadding(channelIndex, enabled).catchError((e) {
-      // Revert to previous value on error
-      final currentState = getState();
-      final currentChannels = List<AudioChannelState>.from(currentState.audio.channels);
-      if (channelIndex < currentChannels.length) {
-        currentChannels[channelIndex] = currentChannels[channelIndex].copyWith(padding: previousValue);
-        updateState(currentState.copyWith(audio: currentState.audio.copyWith(channels: currentChannels)));
-      }
-      setError('Padding not supported on this camera');
-    });
+    _updateChannelBool(
+      channelIndex: channelIndex,
+      getValue: (ch) => ch.padding,
+      copyWithValue: (ch, v) => ch.copyWith(padding: v),
+      newValue: enabled,
+      apiCall: () => getService()!.setPadding(channelIndex, enabled),
+      errorMessage: 'Padding not supported on this camera',
+    );
   }
 
   /// Start polling audio levels (fallback when WebSocket doesn't provide updates)

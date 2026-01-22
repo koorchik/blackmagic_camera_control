@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/audio_state.dart';
 import '../providers/camera_state_provider.dart';
+import '../utils/constants.dart';
 import '../widgets/audio/audio_channel_card.dart';
 
 class AudioScreen extends StatefulWidget {
@@ -43,7 +44,7 @@ class _AudioScreenState extends State<AudioScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 800;
+        final isWide = constraints.maxWidth > Breakpoints.medium;
 
         if (isWide) {
           // Wide layout: 2 channels side by side

@@ -1,19 +1,14 @@
-import '../models/camera_state.dart';
-import '../services/camera_service.dart';
+import '../models/media_state.dart';
+import 'base_controller.dart';
 
 /// Controller for media-related operations.
-class MediaController {
+class MediaController extends BaseController {
   MediaController({
-    required this.getState,
-    required this.updateState,
-    required this.setError,
-    required this.getService,
+    required super.getState,
+    required super.updateState,
+    required super.setError,
+    required super.getService,
   });
-
-  final CameraState Function() getState;
-  final void Function(CameraState state) updateState;
-  final void Function(String error) setError;
-  final CameraService? Function() getService;
 
   /// Fetch fresh media state
   Future<void> refresh() async {

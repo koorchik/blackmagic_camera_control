@@ -1,19 +1,13 @@
-import '../models/camera_state.dart';
-import '../services/camera_service.dart';
+import 'base_controller.dart';
 
 /// Controller for video-related operations (ISO, shutter, white balance).
-class VideoController {
+class VideoController extends BaseController {
   VideoController({
-    required this.getState,
-    required this.updateState,
-    required this.setError,
-    required this.getService,
+    required super.getState,
+    required super.updateState,
+    required super.setError,
+    required super.getService,
   });
-
-  final CameraState Function() getState;
-  final void Function(CameraState state) updateState;
-  final void Function(String error) setError;
-  final CameraService? Function() getService;
 
   /// Set ISO value (optimistic update)
   void setIso(int value, {Future<void> Function()? onComplete}) {

@@ -1,19 +1,13 @@
-import '../models/camera_state.dart';
-import '../services/camera_service.dart';
+import 'base_controller.dart';
 
 /// Controller for lens-related operations (focus, iris, zoom, autofocus).
-class LensController {
+class LensController extends BaseController {
   LensController({
-    required this.getState,
-    required this.updateState,
-    required this.setError,
-    required this.getService,
+    required super.getState,
+    required super.updateState,
+    required super.setError,
+    required super.getService,
   });
-
-  final CameraState Function() getState;
-  final void Function(CameraState state) updateState;
-  final void Function(String error) setError;
-  final CameraService? Function() getService;
 
   /// Set focus - debounced API call only (no state update, for smooth dragging)
   void setFocusDebounced(double value) {

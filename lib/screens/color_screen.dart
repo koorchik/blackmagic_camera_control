@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/color_correction_state.dart';
 import '../providers/camera_state_provider.dart';
+import '../utils/constants.dart';
 import '../widgets/color/color_wheel_card.dart' show ColorWheelCard, ColorWheelType;
 
 class ColorScreen extends StatefulWidget {
@@ -29,9 +30,9 @@ class _ColorScreenState extends State<ColorScreen> {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
 
-        if (width > 1000) {
+        if (width > Breakpoints.expanded) {
           return _buildWideLayout(cameraState, colorCorrection);
-        } else if (width > 600) {
+        } else if (width > Breakpoints.compact) {
           return _buildMediumLayout(cameraState, colorCorrection);
         }
         return _buildNarrowLayout(cameraState, colorCorrection);

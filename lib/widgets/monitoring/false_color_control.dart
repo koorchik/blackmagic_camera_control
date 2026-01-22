@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/camera_state_provider.dart';
-import '../common/toggle_control_row.dart';
+import 'display_toggle_control.dart';
 
 class FalseColorControl extends StatelessWidget {
   const FalseColorControl({super.key});
@@ -9,20 +9,13 @@ class FalseColorControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cameraState = context.watch<CameraStateProvider>();
-    final currentDisplay = cameraState.monitoring.currentDisplay;
 
-    if (currentDisplay == null) {
-      return const SizedBox.shrink();
-    }
-
-    return ToggleControlRow(
+    return DisplayToggleControl(
       icon: Icons.palette,
       title: 'False Color',
       description: 'Color-coded exposure overlay',
-      value: currentDisplay.falseColorEnabled,
-      onChanged: (enabled) {
-        cameraState.setFalseColorEnabled(enabled);
-      },
+      getValue: (display) => display.falseColorEnabled,
+      onChanged: cameraState.setFalseColorEnabled,
     );
   }
 }

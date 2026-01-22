@@ -1,20 +1,39 @@
 import '../models/camera_state.dart';
 import '../models/camera_capabilities.dart';
-import '../services/camera_service.dart';
+import 'base_controller.dart';
 
 /// Controller for monitoring-related operations.
-class MonitoringController {
+class MonitoringController extends BaseController {
   MonitoringController({
-    required this.getState,
-    required this.updateState,
-    required this.setError,
-    required this.getService,
+    required super.getState,
+    required super.updateState,
+    required super.setError,
+    required super.getService,
   });
 
-  final CameraState Function() getState;
-  final void Function(CameraState state) updateState;
-  final void Function(String error) setError;
-  final CameraService? Function() getService;
+  /// Helper to update a boolean property on the current display with optimistic update.
+  void _updateCurrentDisplayBool({
+    required DisplayState Function(DisplayState, bool) copyWithValue,
+    required Future<void> Function(String displayName) apiCall,
+    required String errorMessage,
+    required bool value,
+  }) {
+    final state = getState();
+    final displayName = state.monitoring.selectedDisplay;
+    if (displayName == null) return;
+
+    final currentDisplay = state.monitoring.displays[displayName];
+    if (currentDisplay == null) return;
+
+    final updatedDisplay = copyWithValue(currentDisplay, value);
+    updateState(state.copyWith(
+      monitoring: state.monitoring.updateDisplay(displayName, updatedDisplay),
+    ));
+
+    apiCall(displayName).catchError((e) {
+      setError(errorMessage);
+    });
+  }
 
   /// Fetch fresh monitoring state
   Future<void> refresh() async {
@@ -93,21 +112,12 @@ class MonitoringController {
 
   /// Set zebra enabled for current display
   void setZebraEnabled(bool enabled) {
-    final state = getState();
-    final displayName = state.monitoring.selectedDisplay;
-    if (displayName == null) return;
-
-    final currentDisplay = state.monitoring.displays[displayName];
-    if (currentDisplay == null) return;
-
-    final updatedDisplay = currentDisplay.copyWith(zebraEnabled: enabled);
-    updateState(state.copyWith(
-      monitoring: state.monitoring.updateDisplay(displayName, updatedDisplay),
-    ));
-
-    getService()?.setZebraEnabled(displayName, enabled).catchError((e) {
-      setError('Failed to set zebra: $e');
-    });
+    _updateCurrentDisplayBool(
+      copyWithValue: (d, v) => d.copyWith(zebraEnabled: v),
+      apiCall: (name) => getService()!.setZebraEnabled(name, enabled),
+      errorMessage: 'Failed to set zebra',
+      value: enabled,
+    );
   }
 
   /// Set frame guides enabled for current display
@@ -154,40 +164,22 @@ class MonitoringController {
 
   /// Set clean feed enabled for current display
   void setCleanFeedEnabled(bool enabled) {
-    final state = getState();
-    final displayName = state.monitoring.selectedDisplay;
-    if (displayName == null) return;
-
-    final currentDisplay = state.monitoring.displays[displayName];
-    if (currentDisplay == null) return;
-
-    final updatedDisplay = currentDisplay.copyWith(cleanFeedEnabled: enabled);
-    updateState(state.copyWith(
-      monitoring: state.monitoring.updateDisplay(displayName, updatedDisplay),
-    ));
-
-    getService()?.setCleanFeedEnabled(displayName, enabled).catchError((e) {
-      setError('Failed to set clean feed: $e');
-    });
+    _updateCurrentDisplayBool(
+      copyWithValue: (d, v) => d.copyWith(cleanFeedEnabled: v),
+      apiCall: (name) => getService()!.setCleanFeedEnabled(name, enabled),
+      errorMessage: 'Failed to set clean feed',
+      value: enabled,
+    );
   }
 
   /// Set display LUT enabled for current display
   void setDisplayLutEnabled(bool enabled) {
-    final state = getState();
-    final displayName = state.monitoring.selectedDisplay;
-    if (displayName == null) return;
-
-    final currentDisplay = state.monitoring.displays[displayName];
-    if (currentDisplay == null) return;
-
-    final updatedDisplay = currentDisplay.copyWith(displayLutEnabled: enabled);
-    updateState(state.copyWith(
-      monitoring: state.monitoring.updateDisplay(displayName, updatedDisplay),
-    ));
-
-    getService()?.setDisplayLutEnabled(displayName, enabled).catchError((e) {
-      setError('Failed to set display LUT: $e');
-    });
+    _updateCurrentDisplayBool(
+      copyWithValue: (d, v) => d.copyWith(displayLutEnabled: v),
+      apiCall: (name) => getService()!.setDisplayLutEnabled(name, enabled),
+      errorMessage: 'Failed to set display LUT',
+      value: enabled,
+    );
   }
 
   /// Set program feed display enabled (camera-wide)
@@ -254,40 +246,22 @@ class MonitoringController {
 
   /// Set false color enabled for current display
   void setFalseColorEnabled(bool enabled) {
-    final state = getState();
-    final displayName = state.monitoring.selectedDisplay;
-    if (displayName == null) return;
-
-    final currentDisplay = state.monitoring.displays[displayName];
-    if (currentDisplay == null) return;
-
-    final updatedDisplay = currentDisplay.copyWith(falseColorEnabled: enabled);
-    updateState(state.copyWith(
-      monitoring: state.monitoring.updateDisplay(displayName, updatedDisplay),
-    ));
-
-    getService()?.setFalseColorEnabled(displayName, enabled).catchError((e) {
-      setError('Failed to set false color: $e');
-    });
+    _updateCurrentDisplayBool(
+      copyWithValue: (d, v) => d.copyWith(falseColorEnabled: v),
+      apiCall: (name) => getService()!.setFalseColorEnabled(name, enabled),
+      errorMessage: 'Failed to set false color',
+      value: enabled,
+    );
   }
 
   /// Set safe area enabled for current display
   void setSafeAreaEnabled(bool enabled) {
-    final state = getState();
-    final displayName = state.monitoring.selectedDisplay;
-    if (displayName == null) return;
-
-    final currentDisplay = state.monitoring.displays[displayName];
-    if (currentDisplay == null) return;
-
-    final updatedDisplay = currentDisplay.copyWith(safeAreaEnabled: enabled);
-    updateState(state.copyWith(
-      monitoring: state.monitoring.updateDisplay(displayName, updatedDisplay),
-    ));
-
-    getService()?.setSafeAreaEnabled(displayName, enabled).catchError((e) {
-      setError('Failed to set safe area: $e');
-    });
+    _updateCurrentDisplayBool(
+      copyWithValue: (d, v) => d.copyWith(safeAreaEnabled: v),
+      apiCall: (name) => getService()!.setSafeAreaEnabled(name, enabled),
+      errorMessage: 'Failed to set safe area',
+      value: enabled,
+    );
   }
 
   /// Set safe area percentage (camera-wide)
@@ -304,21 +278,12 @@ class MonitoringController {
 
   /// Set frame grids enabled for current display
   void setFrameGridsEnabled(bool enabled) {
-    final state = getState();
-    final displayName = state.monitoring.selectedDisplay;
-    if (displayName == null) return;
-
-    final currentDisplay = state.monitoring.displays[displayName];
-    if (currentDisplay == null) return;
-
-    final updatedDisplay = currentDisplay.copyWith(frameGridsEnabled: enabled);
-    updateState(state.copyWith(
-      monitoring: state.monitoring.updateDisplay(displayName, updatedDisplay),
-    ));
-
-    getService()?.setFrameGridsEnabled(displayName, enabled).catchError((e) {
-      setError('Failed to set frame grids: $e');
-    });
+    _updateCurrentDisplayBool(
+      copyWithValue: (d, v) => d.copyWith(frameGridsEnabled: v),
+      apiCall: (name) => getService()!.setFrameGridsEnabled(name, enabled),
+      errorMessage: 'Failed to set frame grids',
+      value: enabled,
+    );
   }
 
   /// Set active frame grids (camera-wide)

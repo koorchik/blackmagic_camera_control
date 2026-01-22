@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/camera_state_provider.dart';
+import '../utils/constants.dart';
 import '../widgets/focus/focus_slider.dart';
 import '../widgets/focus/focus_point_selector.dart';
 import '../widgets/exposure/iso_selector.dart';
@@ -17,7 +18,7 @@ class ControlScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 800;
+        final isWide = constraints.maxWidth > Breakpoints.medium;
 
         if (isWide) {
           return _buildWideLayout();
