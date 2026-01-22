@@ -306,9 +306,17 @@ class CameraService {
   Future<FocusAssistState> getFocusAssist(String displayName) =>
       _apiClient.getFocusAssist(displayName);
 
-  /// Set focus assist settings for a display
-  Future<void> setFocusAssist(String displayName, FocusAssistState state) =>
-      _apiClient.setFocusAssist(displayName, state);
+  /// Set focus assist enabled for a display (per-display toggle)
+  Future<void> setFocusAssistEnabled(String displayName, bool enabled) =>
+      _apiClient.setFocusAssistEnabled(displayName, enabled);
+
+  /// Get global focus assist settings (camera-wide)
+  Future<FocusAssistState> getGlobalFocusAssist() =>
+      _apiClient.getGlobalFocusAssist();
+
+  /// Set global focus assist settings (camera-wide: mode, color, intensity)
+  Future<void> setGlobalFocusAssist(FocusAssistState state) =>
+      _apiClient.setGlobalFocusAssist(state);
 
   /// Get zebra enabled for a display
   Future<bool> getZebraEnabled(String displayName) =>
@@ -325,6 +333,13 @@ class CameraService {
   /// Set frame guides settings for a display
   Future<void> setFrameGuides(String displayName, FrameGuidesState state) =>
       _apiClient.setFrameGuides(displayName, state);
+
+  /// Get frame guide ratio (camera-wide setting)
+  Future<String> getFrameGuideRatio() => _apiClient.getFrameGuideRatio();
+
+  /// Set frame guide ratio (camera-wide setting)
+  Future<void> setFrameGuideRatio(String ratio) =>
+      _apiClient.setFrameGuideRatio(ratio);
 
   /// Get clean feed enabled for a display
   Future<bool> getCleanFeedEnabled(String displayName) =>
@@ -393,25 +408,70 @@ class CameraService {
         await _safeCall(() => getVideoFormat(), <String, dynamic>{});
     final currentVideoFormat = _formatVideoFormatString(videoFormatData);
 
+    // Fetch frame guide ratio (camera-wide setting)
+    final frameGuideRatioStr =
+        await _safeCall(() => getFrameGuideRatio(), '16:9');
+    final frameGuideRatio = FrameGuideRatio.values.cast<FrameGuideRatio?>().firstWhere(
+      (r) => r?.label == frameGuideRatioStr,
+      orElse: () => FrameGuideRatio.ratio16x9,
+    )!;
+
+    // Fetch global focus assist settings (camera-wide)
+    final globalFocusAssist =
+        await _safeCall(() => getGlobalFocusAssist(), const FocusAssistState());
+
     return MonitoringState(
       availableDisplays: displays,
       selectedDisplay: displays.isNotEmpty ? displays.first : null,
       displays: displayStates,
       programFeedEnabled: programFeedEnabled,
       currentVideoFormat: currentVideoFormat,
+      currentFrameGuideRatio: frameGuideRatio,
+      globalFocusAssistSettings: globalFocusAssist,
     );
   }
 
   /// Format video format data into a display string
+  /// Handles various response formats from the camera API
   String? _formatVideoFormatString(Map<String, dynamic> data) {
     if (data.isEmpty) return null;
+
+    // Try standard format: {"name": "1920x1080", "frameRate": "23.98p"}
     final name = data['name'] as String?;
     final frameRate = data['frameRate'] as String?;
-    if (name == null) return null;
-    if (frameRate != null) {
-      return '$name $frameRate';
+    if (name != null) {
+      if (frameRate != null) {
+        return '$name $frameRate';
+      }
+      return name;
     }
-    return name;
+
+    // Try alternative format with resolution and fps fields
+    final resolution = data['resolution'] as String?;
+    final fps = data['fps'] as String?;
+    if (resolution != null) {
+      if (fps != null) {
+        return '$resolution $fps';
+      }
+      return resolution;
+    }
+
+    // Try format with width/height
+    final width = data['width'] as int?;
+    final height = data['height'] as int?;
+    if (width != null && height != null) {
+      final resolutionStr = '${width}x$height';
+      if (frameRate != null) {
+        return '$resolutionStr $frameRate';
+      }
+      return resolutionStr;
+    }
+
+    // Fallback: try to build from any available fields
+    final displayName = data['displayName'] as String?;
+    if (displayName != null) return displayName;
+
+    return null;
   }
 
   // ========== COLOR CORRECTION CONTROL ==========

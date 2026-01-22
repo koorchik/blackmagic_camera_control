@@ -36,8 +36,8 @@ class MonitoringController {
     ));
   }
 
-  /// Set focus assist for current display
-  void setFocusAssist(FocusAssistState focusAssist) {
+  /// Set focus assist enabled for current display (per-display toggle)
+  void setFocusAssistEnabled(bool enabled) {
     final state = getState();
     final displayName = state.monitoring.selectedDisplay;
     if (displayName == null) return;
@@ -45,14 +45,37 @@ class MonitoringController {
     final currentDisplay = state.monitoring.displays[displayName];
     if (currentDisplay == null) return;
 
-    final updatedDisplay = currentDisplay.copyWith(focusAssist: focusAssist);
+    final updatedFocusAssist = currentDisplay.focusAssist.copyWith(enabled: enabled);
+    final updatedDisplay = currentDisplay.copyWith(focusAssist: updatedFocusAssist);
     updateState(state.copyWith(
       monitoring: state.monitoring.updateDisplay(displayName, updatedDisplay),
     ));
 
-    getService()?.setFocusAssist(displayName, focusAssist).catchError((e) {
-      setError('Failed to set focus assist: $e');
+    getService()?.setFocusAssistEnabled(displayName, enabled).catchError((e) {
+      setError('Failed to set focus assist enabled: $e');
     });
+  }
+
+  /// Set focus assist settings (camera-wide: mode, color, intensity)
+  void setFocusAssistSettings(FocusAssistState settings) {
+    final state = getState();
+
+    // Update global settings in state
+    updateState(state.copyWith(
+      monitoring: state.monitoring.copyWith(globalFocusAssistSettings: settings),
+    ));
+
+    // Send settings to global endpoint
+    getService()?.setGlobalFocusAssist(settings).catchError((e) {
+      setError('Failed to set focus assist settings: $e');
+    });
+  }
+
+  /// Legacy method for backward compatibility
+  @Deprecated('Use setFocusAssistEnabled and setFocusAssistSettings instead')
+  void setFocusAssist(FocusAssistState focusAssist) {
+    setFocusAssistEnabled(focusAssist.enabled);
+    setFocusAssistSettings(focusAssist);
   }
 
   /// Set zebra enabled for current display
@@ -74,8 +97,8 @@ class MonitoringController {
     });
   }
 
-  /// Set frame guides for current display
-  void setFrameGuides(FrameGuidesState frameGuides) {
+  /// Set frame guides enabled for current display
+  void setFrameGuidesEnabled(bool enabled) {
     final state = getState();
     final displayName = state.monitoring.selectedDisplay;
     if (displayName == null) return;
@@ -83,14 +106,37 @@ class MonitoringController {
     final currentDisplay = state.monitoring.displays[displayName];
     if (currentDisplay == null) return;
 
-    final updatedDisplay = currentDisplay.copyWith(frameGuides: frameGuides);
+    final updatedFrameGuides = currentDisplay.frameGuides.copyWith(enabled: enabled);
+    final updatedDisplay = currentDisplay.copyWith(frameGuides: updatedFrameGuides);
     updateState(state.copyWith(
       monitoring: state.monitoring.updateDisplay(displayName, updatedDisplay),
     ));
 
-    getService()?.setFrameGuides(displayName, frameGuides).catchError((e) {
+    getService()?.setFrameGuides(displayName, updatedFrameGuides).catchError((e) {
       setError('Failed to set frame guides: $e');
     });
+  }
+
+  /// Set frame guide ratio (camera-wide setting)
+  void setFrameGuideRatio(FrameGuideRatio ratio) {
+    final state = getState();
+
+    // Update local state
+    updateState(state.copyWith(
+      monitoring: state.monitoring.copyWith(currentFrameGuideRatio: ratio),
+    ));
+
+    // Send to API
+    getService()?.setFrameGuideRatio(ratio.label).catchError((e) {
+      setError('Failed to set frame guide ratio: $e');
+    });
+  }
+
+  /// Legacy method for backward compatibility - sets both enabled and ratio
+  @Deprecated('Use setFrameGuidesEnabled and setFrameGuideRatio instead')
+  void setFrameGuides(FrameGuidesState frameGuides) {
+    setFrameGuidesEnabled(frameGuides.enabled);
+    setFrameGuideRatio(frameGuides.ratio);
   }
 
   /// Set clean feed enabled for current display

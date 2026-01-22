@@ -15,7 +15,10 @@ class FocusAssistControl extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final focusAssist = currentDisplay.focusAssist;
+    // Enabled state is per-display
+    final focusAssistEnabled = currentDisplay.focusAssist.enabled;
+    // Settings (mode, color, intensity) are camera-wide
+    final globalSettings = cameraState.monitoring.globalFocusAssistSettings;
 
     return Card(
       child: Padding(
@@ -35,16 +38,14 @@ class FocusAssistControl extends StatelessWidget {
                   ),
                 ),
                 Switch(
-                  value: focusAssist.enabled,
+                  value: focusAssistEnabled,
                   onChanged: (enabled) {
-                    cameraState.setFocusAssist(
-                      focusAssist.copyWith(enabled: enabled),
-                    );
+                    cameraState.setFocusAssistEnabled(enabled);
                   },
                 ),
               ],
             ),
-            if (focusAssist.enabled) ...[
+            if (focusAssistEnabled) ...[
               const Divider(),
               // Mode selector
               Text(
@@ -59,10 +60,10 @@ class FocusAssistControl extends StatelessWidget {
                     label: Text(mode.label),
                   );
                 }).toList(),
-                selected: {focusAssist.mode},
+                selected: {globalSettings.mode},
                 onSelectionChanged: (selected) {
-                  cameraState.setFocusAssist(
-                    focusAssist.copyWith(mode: selected.first),
+                  cameraState.setFocusAssistSettings(
+                    globalSettings.copyWith(mode: selected.first),
                   );
                 },
               ),
@@ -77,15 +78,15 @@ class FocusAssistControl extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: FocusAssistColor.values.map((color) {
-                  final isSelected = focusAssist.color == color;
+                  final isSelected = globalSettings.color == color;
                   return ChoiceChip(
                     label: Text(color.label),
                     selected: isSelected,
                     showCheckmark: false,
                     onSelected: (selected) {
                       if (selected) {
-                        cameraState.setFocusAssist(
-                          focusAssist.copyWith(color: color),
+                        cameraState.setFocusAssistSettings(
+                          globalSettings.copyWith(color: color),
                         );
                       }
                     },
@@ -108,14 +109,14 @@ class FocusAssistControl extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               Slider(
-                value: focusAssist.intensity,
+                value: globalSettings.intensity,
                 min: 0.0,
                 max: 1.0,
                 divisions: 10,
-                label: '${(focusAssist.intensity * 100).round()}%',
+                label: '${(globalSettings.intensity * 100).round()}%',
                 onChanged: (value) {
-                  cameraState.setFocusAssist(
-                    focusAssist.copyWith(intensity: value),
+                  cameraState.setFocusAssistSettings(
+                    globalSettings.copyWith(intensity: value),
                   );
                 },
               ),

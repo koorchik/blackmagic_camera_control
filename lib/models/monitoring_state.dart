@@ -74,7 +74,10 @@ class FocusAssistState {
 
   factory FocusAssistState.fromJson(Map<String, dynamic> json) {
     final modeStr = json['mode'] as String?;
-    final colorStr = json['colour'] as String? ?? json['color'] as String?;
+    final colorStr = json['color'] as String? ?? json['colour'] as String?;
+    // API returns intensity as 0-100 integer, convert to 0.0-1.0
+    final rawIntensity = json['intensity'] as num?;
+    final intensity = rawIntensity != null ? rawIntensity.toDouble() / 100.0 : 0.5;
 
     return FocusAssistState(
       enabled: json['enabled'] as bool? ?? false,
@@ -86,16 +89,25 @@ class FocusAssistState {
         (c) => c?.code == colorStr,
         orElse: () => FocusAssistColor.red,
       )!,
-      intensity: (json['intensity'] as num?)?.toDouble() ?? 0.5,
+      intensity: intensity.clamp(0.0, 1.0),
     );
   }
 
+  /// Convert to JSON for the per-display focusAssist endpoint.
+  /// Note: Per-display endpoint only accepts {"enabled": true/false}.
   Map<String, dynamic> toJson() {
     return {
       'enabled': enabled,
+    };
+  }
+
+  /// Convert to JSON for the global focusAssist settings endpoint.
+  /// Intensity is sent as 0-100 integer (converted from internal 0.0-1.0).
+  Map<String, dynamic> toSettingsJson() {
+    return {
       'mode': mode.code,
-      'colour': color.code,
-      'intensity': intensity,
+      'color': color.code,
+      'intensity': (intensity * 100).round(),
     };
   }
 
@@ -159,11 +171,12 @@ class FrameGuidesState {
     );
   }
 
+  /// Convert to JSON for the frameGuide endpoint (per-display).
+  /// Note: API only accepts {"enabled": true/false} for this endpoint.
+  /// Ratio is set via a separate /monitoring/frameGuideRatio endpoint.
   Map<String, dynamic> toJson() {
     return {
       'enabled': enabled,
-      'ratio': ratio.label,
-      'opacity': opacity,
     };
   }
 
@@ -289,6 +302,8 @@ class MonitoringState {
     this.displays = const {},
     this.programFeedEnabled = false,
     this.currentVideoFormat,
+    this.currentFrameGuideRatio = FrameGuideRatio.ratio16x9,
+    this.globalFocusAssistSettings = const FocusAssistState(),
   });
 
   /// List of available display names
@@ -306,6 +321,12 @@ class MonitoringState {
   /// Current video format (e.g., "4K DCI 23.98p")
   final String? currentVideoFormat;
 
+  /// Current frame guide ratio (camera-wide setting)
+  final FrameGuideRatio currentFrameGuideRatio;
+
+  /// Global focus assist settings (mode, color, intensity - camera-wide)
+  final FocusAssistState globalFocusAssistSettings;
+
   /// Get current display state
   DisplayState? get currentDisplay {
     if (selectedDisplay == null) return null;
@@ -320,6 +341,8 @@ class MonitoringState {
     bool? programFeedEnabled,
     String? currentVideoFormat,
     bool clearVideoFormat = false,
+    FrameGuideRatio? currentFrameGuideRatio,
+    FocusAssistState? globalFocusAssistSettings,
   }) {
     return MonitoringState(
       availableDisplays: availableDisplays ?? this.availableDisplays,
@@ -331,6 +354,8 @@ class MonitoringState {
       currentVideoFormat: clearVideoFormat
           ? null
           : (currentVideoFormat ?? this.currentVideoFormat),
+      currentFrameGuideRatio: currentFrameGuideRatio ?? this.currentFrameGuideRatio,
+      globalFocusAssistSettings: globalFocusAssistSettings ?? this.globalFocusAssistSettings,
     );
   }
 
@@ -354,12 +379,27 @@ class MonitoringState {
       );
     }
 
+    // Parse frame guide ratio from string
+    final ratioStr = json['currentFrameGuideRatio'] as String?;
+    final frameGuideRatio = FrameGuideRatio.values.cast<FrameGuideRatio?>().firstWhere(
+      (r) => r?.label == ratioStr,
+      orElse: () => FrameGuideRatio.ratio16x9,
+    )!;
+
+    // Parse global focus assist settings
+    final focusAssistJson = json['globalFocusAssistSettings'] as Map<String, dynamic>?;
+    final globalFocusAssist = focusAssistJson != null
+        ? FocusAssistState.fromJson(focusAssistJson)
+        : const FocusAssistState();
+
     return MonitoringState(
       availableDisplays: availableDisplays,
       selectedDisplay: json['selectedDisplay'] as String?,
       displays: displays,
       programFeedEnabled: json['programFeedEnabled'] as bool? ?? false,
       currentVideoFormat: json['currentVideoFormat'] as String?,
+      currentFrameGuideRatio: frameGuideRatio,
+      globalFocusAssistSettings: globalFocusAssist,
     );
   }
 
@@ -371,7 +411,9 @@ class MonitoringState {
         other.selectedDisplay == selectedDisplay &&
         mapEquals(other.displays, displays) &&
         other.programFeedEnabled == programFeedEnabled &&
-        other.currentVideoFormat == currentVideoFormat;
+        other.currentVideoFormat == currentVideoFormat &&
+        other.currentFrameGuideRatio == currentFrameGuideRatio &&
+        other.globalFocusAssistSettings == globalFocusAssistSettings;
   }
 
   @override
@@ -381,6 +423,8 @@ class MonitoringState {
         Object.hashAll(displays.entries),
         programFeedEnabled,
         currentVideoFormat,
+        currentFrameGuideRatio,
+        globalFocusAssistSettings,
       );
 
   @override

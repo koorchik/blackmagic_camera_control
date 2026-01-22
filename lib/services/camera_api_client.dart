@@ -385,12 +385,20 @@ class CameraApiClient {
     return FocusAssistState.fromJson(data);
   }
 
-  /// Set focus assist settings for a display
-  Future<void> setFocusAssist(
-    String displayName,
-    FocusAssistState state,
-  ) async {
-    await _put(ApiEndpoints.focusAssist(displayName), state.toJson());
+  /// Set focus assist enabled for a display (per-display toggle)
+  Future<void> setFocusAssistEnabled(String displayName, bool enabled) async {
+    await _put(ApiEndpoints.focusAssist(displayName), {'enabled': enabled});
+  }
+
+  /// Get global focus assist settings (camera-wide)
+  Future<FocusAssistState> getGlobalFocusAssist() async {
+    final data = await _get(ApiEndpoints.globalFocusAssist);
+    return FocusAssistState.fromJson(data);
+  }
+
+  /// Set global focus assist settings (camera-wide: mode, color, intensity)
+  Future<void> setGlobalFocusAssist(FocusAssistState state) async {
+    await _put(ApiEndpoints.globalFocusAssist, state.toSettingsJson());
   }
 
   /// Get zebra settings for a display
@@ -418,15 +426,26 @@ class CameraApiClient {
     await _put(ApiEndpoints.frameGuides(displayName), state.toJson());
   }
 
+  /// Get frame guide ratio (camera-wide setting)
+  Future<String> getFrameGuideRatio() async {
+    final data = await _get(ApiEndpoints.frameGuideRatio);
+    return data['ratio'] as String? ?? '16:9';
+  }
+
+  /// Set frame guide ratio (camera-wide setting)
+  Future<void> setFrameGuideRatio(String ratio) async {
+    await _put(ApiEndpoints.frameGuideRatio, {'ratio': ratio});
+  }
+
   /// Get clean feed enabled for a display
   Future<bool> getCleanFeedEnabled(String displayName) async {
     final data = await _get(ApiEndpoints.cleanFeed(displayName));
-    return data['cleanFeed'] as bool? ?? false;
+    return data['enabled'] as bool? ?? false;
   }
 
   /// Set clean feed enabled for a display
   Future<void> setCleanFeedEnabled(String displayName, bool enabled) async {
-    await _put(ApiEndpoints.cleanFeed(displayName), {'cleanFeed': enabled});
+    await _put(ApiEndpoints.cleanFeed(displayName), {'enabled': enabled});
   }
 
   /// Get display LUT enabled for a display

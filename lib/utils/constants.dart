@@ -60,15 +60,21 @@ class ApiEndpoints {
   // Monitoring endpoints
   static const String monitoringDisplays = '/control/api/v1/monitoring/display';
   static String focusAssist(String displayName) =>
-      '/control/api/v1/monitoring/$displayName/focusAssist';
+      '/control/api/v1/monitoring/${Uri.encodeComponent(displayName)}/focusAssist';
   static String zebra(String displayName) =>
-      '/control/api/v1/monitoring/$displayName/zebra';
+      '/control/api/v1/monitoring/${Uri.encodeComponent(displayName)}/zebra';
   static String frameGuides(String displayName) =>
-      '/control/api/v1/monitoring/$displayName/frameGuide';
+      '/control/api/v1/monitoring/${Uri.encodeComponent(displayName)}/frameGuide';
   static String cleanFeed(String displayName) =>
-      '/control/api/v1/monitoring/$displayName/cleanFeed';
+      '/control/api/v1/monitoring/${Uri.encodeComponent(displayName)}/cleanFeed';
   static String displayLut(String displayName) =>
-      '/control/api/v1/monitoring/$displayName/displayLUT';
+      '/control/api/v1/monitoring/${Uri.encodeComponent(displayName)}/displayLUT';
+
+  // Frame guide ratio (camera-wide, not per-display)
+  static const String frameGuideRatio = '/control/api/v1/monitoring/frameGuideRatio';
+
+  // Global focus assist settings (camera-wide)
+  static const String globalFocusAssist = '/control/api/v1/monitoring/focusAssist';
 
   // Camera output endpoints
   static const String programFeedDisplay =

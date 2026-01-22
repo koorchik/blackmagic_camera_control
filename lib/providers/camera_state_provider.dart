@@ -146,10 +146,14 @@ class CameraStateProvider extends ChangeNotifier {
 
     _subscriptions.add(
       service.videoUpdates.listen((video) {
+        // When in auto shutter mode, always apply shutter updates from camera
+        // (camera auto-adjusts shutter when ISO/iris changes)
+        final shouldApplyShutter = _state.video.shutterAuto ||
+            video.shutterSpeed != CameraDefaults.shutterSpeed;
         _state = _state.copyWith(
           video: _state.video.copyWith(
             iso: video.iso != CameraDefaults.iso ? video.iso : null,
-            shutterSpeed: video.shutterSpeed != CameraDefaults.shutterSpeed ? video.shutterSpeed : null,
+            shutterSpeed: shouldApplyShutter ? video.shutterSpeed : null,
             whiteBalance: video.whiteBalance != CameraDefaults.whiteBalance ? video.whiteBalance : null,
           ),
         );
@@ -301,8 +305,14 @@ class CameraStateProvider extends ChangeNotifier {
   // ========== MONITORING CONTROLS (delegated) ==========
   Future<void> refreshMonitoring() => _monitoringController.refresh();
   void selectDisplay(String displayName) => _monitoringController.selectDisplay(displayName);
+  void setFocusAssistEnabled(bool enabled) => _monitoringController.setFocusAssistEnabled(enabled);
+  void setFocusAssistSettings(FocusAssistState settings) => _monitoringController.setFocusAssistSettings(settings);
+  @Deprecated('Use setFocusAssistEnabled and setFocusAssistSettings instead')
   void setFocusAssist(FocusAssistState focusAssist) => _monitoringController.setFocusAssist(focusAssist);
   void setZebraEnabled(bool enabled) => _monitoringController.setZebraEnabled(enabled);
+  void setFrameGuidesEnabled(bool enabled) => _monitoringController.setFrameGuidesEnabled(enabled);
+  void setFrameGuideRatio(FrameGuideRatio ratio) => _monitoringController.setFrameGuideRatio(ratio);
+  @Deprecated('Use setFrameGuidesEnabled and setFrameGuideRatio instead')
   void setFrameGuides(FrameGuidesState frameGuides) => _monitoringController.setFrameGuides(frameGuides);
   void setCleanFeedEnabled(bool enabled) => _monitoringController.setCleanFeedEnabled(enabled);
   void setDisplayLutEnabled(bool enabled) => _monitoringController.setDisplayLutEnabled(enabled);

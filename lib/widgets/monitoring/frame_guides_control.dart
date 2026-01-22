@@ -15,7 +15,9 @@ class FrameGuidesControl extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final frameGuides = currentDisplay.frameGuides;
+    final frameGuidesEnabled = currentDisplay.frameGuides.enabled;
+    // Frame guide ratio is a camera-wide setting (not per-display)
+    final currentRatio = cameraState.monitoring.currentFrameGuideRatio;
 
     return Card(
       child: Padding(
@@ -35,16 +37,14 @@ class FrameGuidesControl extends StatelessWidget {
                   ),
                 ),
                 Switch(
-                  value: frameGuides.enabled,
+                  value: frameGuidesEnabled,
                   onChanged: (enabled) {
-                    cameraState.setFrameGuides(
-                      frameGuides.copyWith(enabled: enabled),
-                    );
+                    cameraState.setFrameGuidesEnabled(enabled);
                   },
                 ),
               ],
             ),
-            if (frameGuides.enabled) ...[
+            if (frameGuidesEnabled) ...[
               const Divider(),
               // Ratio selector
               Text(
@@ -56,38 +56,18 @@ class FrameGuidesControl extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: FrameGuideRatio.values.map((ratio) {
-                  final isSelected = frameGuides.ratio == ratio;
+                  final isSelected = currentRatio == ratio;
                   return ChoiceChip(
                     label: Text(ratio.label),
                     selected: isSelected,
                     showCheckmark: false,
                     onSelected: (selected) {
                       if (selected) {
-                        cameraState.setFrameGuides(
-                          frameGuides.copyWith(ratio: ratio),
-                        );
+                        cameraState.setFrameGuideRatio(ratio);
                       }
                     },
                   );
                 }).toList(),
-              ),
-              const SizedBox(height: 16),
-              // Opacity slider
-              Text(
-                'Opacity',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Slider(
-                value: frameGuides.opacity,
-                min: 0.0,
-                max: 1.0,
-                divisions: 10,
-                label: '${(frameGuides.opacity * 100).round()}%',
-                onChanged: (value) {
-                  cameraState.setFrameGuides(
-                    frameGuides.copyWith(opacity: value),
-                  );
-                },
               ),
             ],
           ],
