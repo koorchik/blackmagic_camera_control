@@ -248,7 +248,8 @@ class CameraStateProvider extends ChangeNotifier {
   // ========== LENS CONTROLS (delegated) ==========
   void setFocusDebounced(double value) => _lensController.setFocusDebounced(value);
   void setFocusFinal(double value) => _lensController.setFocusFinal(value);
-  Future<void> triggerAutofocus() => _lensController.triggerAutofocus();
+  Future<void> triggerAutofocus({double x = 0.5, double y = 0.5}) =>
+      _lensController.triggerAutofocus(x: x, y: y);
   void setIrisDebounced(double value) => _lensController.setIrisDebounced(value);
   void setIrisFinal(double value) => _lensController.setIrisFinal(
         value,

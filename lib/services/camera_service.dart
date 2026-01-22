@@ -105,8 +105,9 @@ class CameraService {
   /// Set focus immediately (no debounce)
   Future<void> setFocus(double value) => _apiClient.setFocus(value);
 
-  /// Trigger autofocus
-  Future<void> triggerAutofocus() => _apiClient.triggerAutofocus();
+  /// Trigger autofocus at a specific position in frame
+  Future<void> triggerAutofocus({double x = 0.5, double y = 0.5}) =>
+      _apiClient.triggerAutofocus(x: x, y: y);
 
   /// Get current focus position
   Future<double> getFocus() => _apiClient.getFocus();

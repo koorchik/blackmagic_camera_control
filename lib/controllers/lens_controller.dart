@@ -27,10 +27,11 @@ class LensController {
     getService()?.setFocus(value);
   }
 
-  /// Trigger autofocus
-  Future<void> triggerAutofocus() async {
+  /// Trigger autofocus at a specific position in frame
+  /// [x] and [y] are normalized coordinates (0.0-1.0), defaulting to center
+  Future<void> triggerAutofocus({double x = 0.5, double y = 0.5}) async {
     try {
-      await getService()?.triggerAutofocus();
+      await getService()?.triggerAutofocus(x: x, y: y);
       // Wait a bit for AF to complete, then fetch new focus position
       await Future.delayed(const Duration(milliseconds: 500));
       final newFocus = await getService()?.getFocus();

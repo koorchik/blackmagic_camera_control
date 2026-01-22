@@ -42,14 +42,12 @@ class CameraApiClient {
     await _put(ApiEndpoints.lensFocus, {'normalised': value.clamp(0.0, 1.0)});
   }
 
-  /// Trigger autofocus
-  Future<void> triggerAutofocus() async {
-    final response = await _httpClient
-        .put(Uri.parse('$_baseUrl${ApiEndpoints.lensDoAutoFocus}'))
-        .timeout(Durations.connectionTimeout);
-    if (response.statusCode != 200 && response.statusCode != 204) {
-      throw ApiException('Autofocus failed: ${response.statusCode}');
-    }
+  /// Trigger autofocus at a specific position in frame
+  /// [x] and [y] are normalized coordinates (0.0-1.0), defaulting to center
+  Future<void> triggerAutofocus({double x = 0.5, double y = 0.5}) async {
+    await _put(ApiEndpoints.lensDoAutoFocus, {
+      'position': {'x': x.clamp(0.0, 1.0), 'y': y.clamp(0.0, 1.0)},
+    });
   }
 
   /// Get current iris value

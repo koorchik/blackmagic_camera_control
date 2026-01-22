@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/camera_state_provider.dart';
 import '../widgets/focus/focus_slider.dart';
-import '../widgets/focus/autofocus_button.dart';
+import '../widgets/focus/focus_point_selector.dart';
 import '../widgets/exposure/iso_selector.dart';
 import '../widgets/exposure/shutter_control.dart';
 import '../widgets/exposure/white_balance_control.dart';
@@ -87,19 +89,7 @@ class ControlScreen extends StatelessWidget {
   }
 
   static Widget _buildFocusCard() {
-    return const Card(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            FocusSlider(),
-            SizedBox(height: 16),
-            AutofocusButton(),
-          ],
-        ),
-      ),
-    );
+    return const _FocusCard();
   }
 
   static Widget _buildTransportCard() {
@@ -111,6 +101,52 @@ class ControlScreen extends StatelessWidget {
             TimecodeDisplay(),
             SizedBox(height: 16),
             RecordButton(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Focus card with slider and focus point selector.
+class _FocusCard extends StatefulWidget {
+  const _FocusCard();
+
+  @override
+  State<_FocusCard> createState() => _FocusCardState();
+}
+
+class _FocusCardState extends State<_FocusCard> {
+  bool _isLoading = false;
+
+  Future<void> _triggerAutofocus(double x, double y) async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await context.read<CameraStateProvider>().triggerAutofocus(x: x, y: y);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const FocusSlider(),
+            const SizedBox(height: 16),
+            FocusPointSelector(
+              onPositionSelected: _triggerAutofocus,
+              isLoading: _isLoading,
+            ),
           ],
         ),
       ),
