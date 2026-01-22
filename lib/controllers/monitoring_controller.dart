@@ -57,17 +57,29 @@ class MonitoringController {
   }
 
   /// Set focus assist settings (camera-wide: mode, color, intensity)
+  /// Note: Some cameras don't support changing these via API.
   void setFocusAssistSettings(FocusAssistState settings) {
     final state = getState();
+    final previousSettings = state.monitoring.globalFocusAssistSettings;
 
-    // Update global settings in state
+    // Update global settings in state optimistically
     updateState(state.copyWith(
       monitoring: state.monitoring.copyWith(globalFocusAssistSettings: settings),
     ));
 
     // Send settings to global endpoint
     getService()?.setGlobalFocusAssist(settings).catchError((e) {
-      setError('Failed to set focus assist settings: $e');
+      // Revert to previous settings on error
+      final currentState = getState();
+      updateState(currentState.copyWith(
+        monitoring: currentState.monitoring.copyWith(globalFocusAssistSettings: previousSettings),
+      ));
+
+      if (e.toString().contains('cannot be changed via API')) {
+        setError('Focus assist settings can only be changed on camera');
+      } else {
+        setError('Failed to set focus assist settings: $e');
+      }
     });
   }
 

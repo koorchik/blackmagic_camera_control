@@ -9,15 +9,25 @@ class ApiEndpoints {
   static const String lensDoAutoFocus = '/control/api/v1/lens/focus/doAutoFocus';
   static const String lensIris = '/control/api/v1/lens/iris';
   static const String lensZoom = '/control/api/v1/lens/zoom';
+  static const String lensOIS = '/control/api/v1/lens/opticalImageStabilization';
 
   // Video endpoints
   static const String videoIso = '/control/api/v1/video/iso';
   static const String videoShutter = '/control/api/v1/video/shutter';
+  static const String videoShutterMeasurement =
+      '/control/api/v1/video/shutter/measurement';
   static const String videoAutoExposure = '/control/api/v1/video/autoExposure';
   static const String videoWhiteBalance = '/control/api/v1/video/whiteBalance';
   static const String videoWhiteBalanceTint =
       '/control/api/v1/video/whiteBalanceTint';
   static const String videoGain = '/control/api/v1/video/gain';
+  static const String videoNDFilter = '/control/api/v1/video/ndFilter';
+  static const String videoNDFilterDisplayMode =
+      '/control/api/v1/video/ndFilter/displayMode';
+  static const String videoDetailSharpening =
+      '/control/api/v1/video/detailSharpening';
+  static const String videoDetailSharpeningLevel =
+      '/control/api/v1/video/detailSharpeningLevel';
 
   // Transport endpoints
   static const String transportRecord = '/control/api/v1/transports/0/record';
@@ -78,20 +88,50 @@ class ApiEndpoints {
   // Global focus assist settings (camera-wide)
   static const String globalFocusAssist = '/control/api/v1/monitoring/focusAssist';
 
+  // Per-display false color, safe area, frame grids
+  static String falseColor(String displayName) =>
+      '/control/api/v1/monitoring/${Uri.encodeComponent(displayName)}/falseColor';
+  static String safeArea(String displayName) =>
+      '/control/api/v1/monitoring/${Uri.encodeComponent(displayName)}/safeArea';
+  static String frameGrids(String displayName) =>
+      '/control/api/v1/monitoring/${Uri.encodeComponent(displayName)}/frameGrids';
+
+  // Global monitoring settings (camera-wide)
+  static const String globalSafeAreaPercent = '/control/api/v1/monitoring/safeAreaPercent';
+  static const String globalFrameGrids = '/control/api/v1/monitoring/frameGrids';
+
   // Camera output endpoints
   static const String programFeedDisplay =
       '/control/api/v1/camera/programFeedDisplay';
   static const String videoFormat = '/control/api/v1/system/videoFormat';
 
+  // Camera control endpoints
+  static const String cameraColorBars = '/control/api/v1/camera/colorBars';
+  static const String cameraPower = '/control/api/v1/camera/power';
+  static const String cameraTallyStatus = '/control/api/v1/camera/tallyStatus';
+
+  // System codec format endpoints
+  static const String systemCodecFormat = '/control/api/v1/system/codecFormat';
+
+  // Presets endpoints
+  static const String presets = '/control/api/v1/presets';
+  static const String presetsActive = '/control/api/v1/presets/active';
+  static String preset(String presetName) =>
+      '/control/api/v1/presets/${Uri.encodeComponent(presetName)}';
+
   // Color Correction endpoints
   static const String colorLift = '/control/api/v1/colorCorrection/lift';
   static const String colorGamma = '/control/api/v1/colorCorrection/gamma';
   static const String colorGain = '/control/api/v1/colorCorrection/gain';
+  static const String colorOffset = '/control/api/v1/colorCorrection/offset';
   static const String colorSaturation =
       '/control/api/v1/colorCorrection/saturation';
   static const String colorContrast =
       '/control/api/v1/colorCorrection/contrast';
   static const String colorHue = '/control/api/v1/colorCorrection/hue';
+  static const String colorColor = '/control/api/v1/colorCorrection/color';
+  static const String colorLumaContribution =
+      '/control/api/v1/colorCorrection/lumaContribution';
 
   // Capabilities Discovery endpoints
   static const String supportedISOs = '/control/api/v1/video/supportedISOs';

@@ -72,6 +72,21 @@ class CameraApiClient {
     await _put(ApiEndpoints.lensZoom, {'normalised': value.clamp(0.0, 1.0)});
   }
 
+  /// Get optical image stabilization state
+  Future<bool> getOIS() async {
+    try {
+      final data = await _get(ApiEndpoints.lensOIS);
+      return data['enabled'] as bool? ?? false;
+    } on FeatureNotSupportedException {
+      return false;
+    }
+  }
+
+  /// Set optical image stabilization enabled
+  Future<void> setOIS(bool enabled) async {
+    await _put(ApiEndpoints.lensOIS, {'enabled': enabled});
+  }
+
   // ========== VIDEO SETTINGS ==========
 
   /// Get current ISO
@@ -125,6 +140,73 @@ class CameraApiClient {
   /// Set white balance tint (-50 to +50)
   Future<void> setWhiteBalanceTint(int tint) async {
     await _put(ApiEndpoints.videoWhiteBalanceTint, {'whiteBalanceTint': tint.clamp(-50, 50)});
+  }
+
+  /// Get ND filter value
+  Future<Map<String, dynamic>> getNDFilter() async {
+    return await _get(ApiEndpoints.videoNDFilter);
+  }
+
+  /// Set ND filter stop value
+  Future<void> setNDFilter(double stop) async {
+    await _put(ApiEndpoints.videoNDFilter, {'stop': stop});
+  }
+
+  /// Get ND filter display mode
+  Future<String> getNDFilterDisplayMode() async {
+    final data = await _get(ApiEndpoints.videoNDFilterDisplayMode);
+    return data['displayMode'] as String? ?? 'Stop';
+  }
+
+  /// Set ND filter display mode
+  Future<void> setNDFilterDisplayMode(String mode) async {
+    await _put(ApiEndpoints.videoNDFilterDisplayMode, {'displayMode': mode});
+  }
+
+  /// Get shutter measurement mode (ShutterSpeed or ShutterAngle)
+  Future<String> getShutterMeasurement() async {
+    final data = await _get(ApiEndpoints.videoShutterMeasurement);
+    return data['measurement'] as String? ?? 'ShutterSpeed';
+  }
+
+  /// Set shutter measurement mode
+  Future<void> setShutterMeasurement(String measurement) async {
+    await _put(ApiEndpoints.videoShutterMeasurement, {'measurement': measurement});
+  }
+
+  /// Set shutter angle
+  Future<void> setShutterAngle(double angle) async {
+    await _put(ApiEndpoints.videoShutter, {'shutterAngle': angle});
+  }
+
+  /// Get detail sharpening state
+  Future<bool> getDetailSharpening() async {
+    try {
+      final data = await _get(ApiEndpoints.videoDetailSharpening);
+      return data['enabled'] as bool? ?? false;
+    } on FeatureNotSupportedException {
+      return false;
+    }
+  }
+
+  /// Set detail sharpening enabled
+  Future<void> setDetailSharpening(bool enabled) async {
+    await _put(ApiEndpoints.videoDetailSharpening, {'enabled': enabled});
+  }
+
+  /// Get detail sharpening level
+  Future<String> getDetailSharpeningLevel() async {
+    try {
+      final data = await _get(ApiEndpoints.videoDetailSharpeningLevel);
+      return data['level'] as String? ?? 'Medium';
+    } on FeatureNotSupportedException {
+      return 'Medium';
+    }
+  }
+
+  /// Set detail sharpening level ('Low', 'Medium', 'High')
+  Future<void> setDetailSharpeningLevel(String level) async {
+    await _put(ApiEndpoints.videoDetailSharpeningLevel, {'level': level});
   }
 
   // ========== TRANSPORT CONTROL ==========
@@ -456,8 +538,28 @@ class CameraApiClient {
   }
 
   /// Set global focus assist settings (camera-wide: mode, color, intensity)
+  /// Note: Some camera models (e.g., Micro Studio Camera 4K G2) don't support
+  /// changing these settings via API - they return 422 Unprocessable Entity.
   Future<void> setGlobalFocusAssist(FocusAssistState state) async {
-    await _put(ApiEndpoints.globalFocusAssist, state.toSettingsJson());
+    final body = state.toSettingsJson();
+    final response = await _httpClient
+        .put(
+          Uri.parse('$_baseUrl${ApiEndpoints.globalFocusAssist}'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        )
+        .timeout(Durations.connectionTimeout);
+
+    if (response.statusCode == 422) {
+      throw FeatureNotSupportedException(
+          '${ApiEndpoints.globalFocusAssist} (focus assist settings cannot be changed via API on this camera)');
+    }
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      if (response.statusCode == 404) {
+        throw FeatureNotSupportedException(ApiEndpoints.globalFocusAssist);
+      }
+      throw ApiException('PUT ${ApiEndpoints.globalFocusAssist} failed: ${response.statusCode}');
+    }
   }
 
   /// Get zebra settings for a display
@@ -527,6 +629,82 @@ class CameraApiClient {
   /// Set program feed display enabled
   Future<void> setProgramFeedEnabled(bool enabled) async {
     await _put(ApiEndpoints.programFeedDisplay, {'enabled': enabled});
+  }
+
+  /// Get false color enabled for a display
+  Future<bool> getFalseColorEnabled(String displayName) async {
+    try {
+      final data = await _get(ApiEndpoints.falseColor(displayName));
+      return data['enabled'] as bool? ?? false;
+    } on FeatureNotSupportedException {
+      return false;
+    }
+  }
+
+  /// Set false color enabled for a display
+  Future<void> setFalseColorEnabled(String displayName, bool enabled) async {
+    await _put(ApiEndpoints.falseColor(displayName), {'enabled': enabled});
+  }
+
+  /// Get safe area enabled for a display
+  Future<bool> getSafeAreaEnabled(String displayName) async {
+    try {
+      final data = await _get(ApiEndpoints.safeArea(displayName));
+      return data['enabled'] as bool? ?? false;
+    } on FeatureNotSupportedException {
+      return false;
+    }
+  }
+
+  /// Set safe area enabled for a display
+  Future<void> setSafeAreaEnabled(String displayName, bool enabled) async {
+    await _put(ApiEndpoints.safeArea(displayName), {'enabled': enabled});
+  }
+
+  /// Get safe area percentage (camera-wide)
+  Future<int> getSafeAreaPercent() async {
+    try {
+      final data = await _get(ApiEndpoints.globalSafeAreaPercent);
+      return data['percent'] as int? ?? 80;
+    } on FeatureNotSupportedException {
+      return 80;
+    }
+  }
+
+  /// Set safe area percentage (camera-wide)
+  Future<void> setSafeAreaPercent(int percent) async {
+    await _put(ApiEndpoints.globalSafeAreaPercent, {'percent': percent.clamp(50, 100)});
+  }
+
+  /// Get frame grids enabled for a display
+  Future<bool> getFrameGridsEnabled(String displayName) async {
+    try {
+      final data = await _get(ApiEndpoints.frameGrids(displayName));
+      return data['enabled'] as bool? ?? false;
+    } on FeatureNotSupportedException {
+      return false;
+    }
+  }
+
+  /// Set frame grids enabled for a display
+  Future<void> setFrameGridsEnabled(String displayName, bool enabled) async {
+    await _put(ApiEndpoints.frameGrids(displayName), {'enabled': enabled});
+  }
+
+  /// Get global frame grids settings (camera-wide)
+  Future<List<String>> getGlobalFrameGrids() async {
+    try {
+      final data = await _get(ApiEndpoints.globalFrameGrids);
+      final grids = data['frameGrids'] as List<dynamic>?;
+      return grids?.cast<String>() ?? [];
+    } on FeatureNotSupportedException {
+      return [];
+    }
+  }
+
+  /// Set global frame grids settings (camera-wide)
+  Future<void> setGlobalFrameGrids(List<String> grids) async {
+    await _put(ApiEndpoints.globalFrameGrids, {'frameGrids': grids});
   }
 
   /// Get current video format
@@ -608,6 +786,145 @@ class CameraApiClient {
   /// Set hue
   Future<void> setColorHue(double value) async {
     await _put(ApiEndpoints.colorHue, {'hue': value});
+  }
+
+  /// Get color offset
+  Future<ColorWheelValues> getColorOffset() async {
+    try {
+      final data = await _get(ApiEndpoints.colorOffset);
+      return ColorWheelValues.fromJson(data);
+    } on FeatureNotSupportedException {
+      return const ColorWheelValues();
+    }
+  }
+
+  /// Set color offset
+  Future<void> setColorOffset(ColorWheelValues values) async {
+    await _put(ApiEndpoints.colorOffset, values.toJson());
+  }
+
+  /// Get contrast with pivot
+  Future<Map<String, dynamic>> getColorContrastWithPivot() async {
+    final data = await _get(ApiEndpoints.colorContrast);
+    return data;
+  }
+
+  /// Set contrast with pivot
+  Future<void> setColorContrastWithPivot(double adjust, double pivot) async {
+    await _put(ApiEndpoints.colorContrast, {'adjust': adjust, 'pivot': pivot});
+  }
+
+  /// Get luma contribution
+  Future<double> getColorLumaContribution() async {
+    try {
+      final data = await _get(ApiEndpoints.colorLumaContribution);
+      return (data['lumaContribution'] as num?)?.toDouble() ?? 1.0;
+    } on FeatureNotSupportedException {
+      return 1.0;
+    }
+  }
+
+  /// Set luma contribution
+  Future<void> setColorLumaContribution(double value) async {
+    await _put(ApiEndpoints.colorLumaContribution, {'lumaContribution': value});
+  }
+
+  // ========== CAMERA CONTROL ==========
+
+  /// Get color bars status
+  Future<bool> getColorBarsEnabled() async {
+    try {
+      final data = await _get(ApiEndpoints.cameraColorBars);
+      return data['enabled'] as bool? ?? false;
+    } on FeatureNotSupportedException {
+      return false;
+    }
+  }
+
+  /// Set color bars status
+  Future<void> setColorBarsEnabled(bool enabled) async {
+    await _put(ApiEndpoints.cameraColorBars, {'enabled': enabled});
+  }
+
+  /// Get power status
+  Future<Map<String, dynamic>> getPowerStatus() async {
+    try {
+      return await _get(ApiEndpoints.cameraPower);
+    } on FeatureNotSupportedException {
+      return {};
+    }
+  }
+
+  /// Get tally status
+  Future<Map<String, dynamic>> getTallyStatus() async {
+    try {
+      return await _get(ApiEndpoints.cameraTallyStatus);
+    } on FeatureNotSupportedException {
+      return {};
+    }
+  }
+
+  // ========== CODEC FORMAT ==========
+
+  /// Get current codec format
+  Future<Map<String, dynamic>> getCodecFormat() async {
+    try {
+      return await _get(ApiEndpoints.systemCodecFormat);
+    } on FeatureNotSupportedException {
+      return {};
+    }
+  }
+
+  /// Set codec format
+  Future<void> setCodecFormat(String codec, String container) async {
+    await _put(ApiEndpoints.systemCodecFormat, {'codec': codec, 'container': container});
+  }
+
+  // ========== PRESETS ==========
+
+  /// Get list of presets
+  Future<List<String>> getPresets() async {
+    try {
+      final data = await _get(ApiEndpoints.presets);
+      final presets = data['presets'] as List<dynamic>?;
+      return presets?.cast<String>() ?? [];
+    } on FeatureNotSupportedException {
+      return [];
+    }
+  }
+
+  /// Get active preset
+  Future<String?> getActivePreset() async {
+    try {
+      final data = await _get(ApiEndpoints.presetsActive);
+      return data['preset'] as String?;
+    } on FeatureNotSupportedException {
+      return null;
+    }
+  }
+
+  /// Set active preset (apply a preset)
+  Future<void> setActivePreset(String presetName) async {
+    await _put(ApiEndpoints.presetsActive, {'preset': presetName});
+  }
+
+  /// Save current state as a preset
+  Future<void> savePreset(String presetName) async {
+    await _put(ApiEndpoints.preset(presetName), {});
+  }
+
+  /// Delete a preset
+  Future<void> deletePreset(String presetName) async {
+    final response = await _httpClient
+        .delete(Uri.parse('$_baseUrl${ApiEndpoints.preset(presetName)}'))
+        .timeout(Durations.connectionTimeout);
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      if (response.statusCode == 404) {
+        throw FeatureNotSupportedException(ApiEndpoints.preset(presetName));
+      }
+      throw ApiException('DELETE preset failed: ${response.statusCode}');
+    }
   }
 
   // ========== SYSTEM INFO ==========

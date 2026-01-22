@@ -37,6 +37,24 @@ enum FrameGuideRatio {
   final double value;
 }
 
+/// Frame grid types
+enum FrameGridType {
+  thirds('Thirds', 'Rule of Thirds'),
+  crosshair('Crosshair', 'Center Crosshair'),
+  centerDot('CenterDot', 'Center Dot');
+
+  const FrameGridType(this.code, this.label);
+  final String code;
+  final String label;
+
+  static FrameGridType fromString(String? value) {
+    return FrameGridType.values.firstWhere(
+      (g) => g.code == value,
+      orElse: () => FrameGridType.thirds,
+    );
+  }
+}
+
 @immutable
 class FocusAssistState {
   const FocusAssistState({
@@ -207,6 +225,9 @@ class DisplayState {
     this.frameGuides = const FrameGuidesState(),
     this.cleanFeedEnabled = false,
     this.displayLutEnabled = false,
+    this.falseColorEnabled = false,
+    this.safeAreaEnabled = false,
+    this.frameGridsEnabled = false,
   });
 
   /// Display name/identifier
@@ -230,6 +251,15 @@ class DisplayState {
   /// Whether display LUT is enabled
   final bool displayLutEnabled;
 
+  /// Whether false color is enabled
+  final bool falseColorEnabled;
+
+  /// Whether safe area is enabled
+  final bool safeAreaEnabled;
+
+  /// Whether frame grids are enabled
+  final bool frameGridsEnabled;
+
   DisplayState copyWith({
     String? name,
     FocusAssistState? focusAssist,
@@ -238,6 +268,9 @@ class DisplayState {
     FrameGuidesState? frameGuides,
     bool? cleanFeedEnabled,
     bool? displayLutEnabled,
+    bool? falseColorEnabled,
+    bool? safeAreaEnabled,
+    bool? frameGridsEnabled,
   }) {
     return DisplayState(
       name: name ?? this.name,
@@ -247,6 +280,9 @@ class DisplayState {
       frameGuides: frameGuides ?? this.frameGuides,
       cleanFeedEnabled: cleanFeedEnabled ?? this.cleanFeedEnabled,
       displayLutEnabled: displayLutEnabled ?? this.displayLutEnabled,
+      falseColorEnabled: falseColorEnabled ?? this.falseColorEnabled,
+      safeAreaEnabled: safeAreaEnabled ?? this.safeAreaEnabled,
+      frameGridsEnabled: frameGridsEnabled ?? this.frameGridsEnabled,
     );
   }
 
@@ -263,6 +299,9 @@ class DisplayState {
           : const FrameGuidesState(),
       cleanFeedEnabled: json['cleanFeedEnabled'] as bool? ?? false,
       displayLutEnabled: json['displayLutEnabled'] as bool? ?? false,
+      falseColorEnabled: json['falseColorEnabled'] as bool? ?? false,
+      safeAreaEnabled: json['safeAreaEnabled'] as bool? ?? false,
+      frameGridsEnabled: json['frameGridsEnabled'] as bool? ?? false,
     );
   }
 
@@ -276,7 +315,10 @@ class DisplayState {
         other.zebraLevel == zebraLevel &&
         other.frameGuides == frameGuides &&
         other.cleanFeedEnabled == cleanFeedEnabled &&
-        other.displayLutEnabled == displayLutEnabled;
+        other.displayLutEnabled == displayLutEnabled &&
+        other.falseColorEnabled == falseColorEnabled &&
+        other.safeAreaEnabled == safeAreaEnabled &&
+        other.frameGridsEnabled == frameGridsEnabled;
   }
 
   @override
@@ -288,6 +330,9 @@ class DisplayState {
         frameGuides,
         cleanFeedEnabled,
         displayLutEnabled,
+        falseColorEnabled,
+        safeAreaEnabled,
+        frameGridsEnabled,
       );
 
   @override

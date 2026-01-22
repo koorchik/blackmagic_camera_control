@@ -9,6 +9,8 @@ class LensState {
     this.focusSupported = true,
     this.irisSupported = true,
     this.zoomSupported = true,
+    this.oisEnabled = false,
+    this.oisSupported = false,
   });
 
   /// Focus position (0.0 = near, 1.0 = far)
@@ -29,6 +31,12 @@ class LensState {
   /// Whether zoom control is supported by the current lens
   final bool zoomSupported;
 
+  /// Whether optical image stabilization is enabled
+  final bool oisEnabled;
+
+  /// Whether OIS is supported by the current lens
+  final bool oisSupported;
+
   LensState copyWith({
     double? focus,
     double? iris,
@@ -36,6 +44,8 @@ class LensState {
     bool? focusSupported,
     bool? irisSupported,
     bool? zoomSupported,
+    bool? oisEnabled,
+    bool? oisSupported,
   }) {
     return LensState(
       focus: focus ?? this.focus,
@@ -44,6 +54,8 @@ class LensState {
       focusSupported: focusSupported ?? this.focusSupported,
       irisSupported: irisSupported ?? this.irisSupported,
       zoomSupported: zoomSupported ?? this.zoomSupported,
+      oisEnabled: oisEnabled ?? this.oisEnabled,
+      oisSupported: oisSupported ?? this.oisSupported,
     );
   }
 
@@ -52,6 +64,8 @@ class LensState {
       focus: (json['focus'] as num?)?.toDouble() ?? 0.5,
       iris: (json['iris'] as num?)?.toDouble() ?? 0.0,
       zoom: (json['zoom'] as num?)?.toDouble() ?? 0.0,
+      oisEnabled: json['oisEnabled'] as bool? ?? false,
+      oisSupported: json['oisSupported'] as bool? ?? false,
     );
   }
 
@@ -64,7 +78,9 @@ class LensState {
         other.zoom == zoom &&
         other.focusSupported == focusSupported &&
         other.irisSupported == irisSupported &&
-        other.zoomSupported == zoomSupported;
+        other.zoomSupported == zoomSupported &&
+        other.oisEnabled == oisEnabled &&
+        other.oisSupported == oisSupported;
   }
 
   @override
@@ -75,6 +91,8 @@ class LensState {
         focusSupported,
         irisSupported,
         zoomSupported,
+        oisEnabled,
+        oisSupported,
       );
 
   @override
