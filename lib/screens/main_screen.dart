@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/camera_connection_provider.dart';
 import '../providers/camera_state_provider.dart';
 import '../widgets/common/error_banner.dart';
+import '../widgets/common/tally_indicator.dart';
+import '../widgets/common/power_status_indicator.dart';
 import 'control_screen.dart';
 import 'audio_screen.dart';
 import 'media_screen.dart';
@@ -18,12 +21,29 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  Timer? _statusRefreshTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeCameraState();
+      _startStatusRefresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startStatusRefresh() {
+    // Refresh status indicators every 5 seconds
+    _statusRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) {
+        context.read<CameraStateProvider>().refreshStatusIndicators();
+      }
     });
   }
 
@@ -34,6 +54,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _disconnect() async {
+    _statusRefreshTimer?.cancel();
     final cameraState = context.read<CameraStateProvider>();
     cameraState.initialize(null);
     await context.read<CameraConnectionProvider>().disconnect();
@@ -66,6 +87,8 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
         actions: [
+          TallyIndicator(status: cameraState.tallyStatus),
+          PowerStatusIndicator(powerState: cameraState.power),
           if (cameraState.isLoading)
             const Padding(
               padding: EdgeInsets.all(12),

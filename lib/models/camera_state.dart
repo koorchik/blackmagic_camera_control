@@ -8,6 +8,8 @@ import 'audio_state.dart';
 import 'media_state.dart';
 import 'monitoring_state.dart';
 import 'color_correction_state.dart';
+import 'power_state.dart';
+import 'preset_state.dart';
 
 export 'lens_state.dart';
 export 'video_state.dart';
@@ -17,6 +19,8 @@ export 'audio_state.dart';
 export 'media_state.dart';
 export 'monitoring_state.dart';
 export 'color_correction_state.dart';
+export 'power_state.dart';
+export 'preset_state.dart';
 
 @immutable
 class CameraState {
@@ -29,6 +33,9 @@ class CameraState {
     this.media = const MediaState(),
     this.monitoring = const MonitoringState(),
     this.colorCorrection = const ColorCorrectionState(),
+    this.power = const PowerState(),
+    this.tallyStatus = TallyStatus.none,
+    this.preset = const PresetState(),
   });
 
   final LensState lens;
@@ -39,6 +46,9 @@ class CameraState {
   final MediaState media;
   final MonitoringState monitoring;
   final ColorCorrectionState colorCorrection;
+  final PowerState power;
+  final TallyStatus tallyStatus;
+  final PresetState preset;
 
   CameraState copyWith({
     LensState? lens,
@@ -49,6 +59,9 @@ class CameraState {
     MediaState? media,
     MonitoringState? monitoring,
     ColorCorrectionState? colorCorrection,
+    PowerState? power,
+    TallyStatus? tallyStatus,
+    PresetState? preset,
   }) {
     return CameraState(
       lens: lens ?? this.lens,
@@ -59,6 +72,9 @@ class CameraState {
       media: media ?? this.media,
       monitoring: monitoring ?? this.monitoring,
       colorCorrection: colorCorrection ?? this.colorCorrection,
+      power: power ?? this.power,
+      tallyStatus: tallyStatus ?? this.tallyStatus,
+      preset: preset ?? this.preset,
     );
   }
 
@@ -73,7 +89,10 @@ class CameraState {
         other.audio == audio &&
         other.media == media &&
         other.monitoring == monitoring &&
-        other.colorCorrection == colorCorrection;
+        other.colorCorrection == colorCorrection &&
+        other.power == power &&
+        other.tallyStatus == tallyStatus &&
+        other.preset == preset;
   }
 
   @override
@@ -86,6 +105,9 @@ class CameraState {
         media,
         monitoring,
         colorCorrection,
+        power,
+        tallyStatus,
+        preset,
       );
 
   @override

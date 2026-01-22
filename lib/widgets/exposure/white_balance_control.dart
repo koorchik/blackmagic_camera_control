@@ -26,7 +26,6 @@ class WhiteBalanceControl extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'WHITE BALANCE',
@@ -34,6 +33,18 @@ class WhiteBalanceControl extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
               ),
+              const Spacer(),
+              FilledButton.tonal(
+                onPressed: () {
+                  cameraState.triggerAutoWhiteBalance();
+                },
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(48, 32),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                child: const Text('AWB'),
+              ),
+              Spacing.horizontalMd,
               Text(
                 '${whiteBalance}K',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(

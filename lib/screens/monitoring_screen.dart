@@ -11,6 +11,11 @@ import '../widgets/monitoring/display_lut_control.dart';
 import '../widgets/monitoring/program_feed_control.dart';
 import '../widgets/monitoring/video_format_selector.dart';
 import '../widgets/monitoring/codec_format_selector.dart';
+import '../widgets/monitoring/color_bars_control.dart';
+import '../widgets/monitoring/false_color_control.dart';
+import '../widgets/monitoring/safe_area_control.dart';
+import '../widgets/monitoring/frame_grids_control.dart';
+import '../widgets/preset/preset_section.dart';
 
 class MonitoringScreen extends StatefulWidget {
   const MonitoringScreen({super.key});
@@ -96,6 +101,8 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
               _buildDisplaySettings(monitoring),
               const SizedBox(height: 24),
               _buildCameraOutputSettings(),
+              const SizedBox(height: 24),
+              const PresetSection(),
             ],
           ),
         );
@@ -114,7 +121,13 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
           const SizedBox(height: 8),
           const ZebraControl(),
           const SizedBox(height: 8),
+          const FalseColorControl(),
+          const SizedBox(height: 8),
           const FrameGuidesControl(),
+          const SizedBox(height: 8),
+          const SafeAreaControl(),
+          const SizedBox(height: 8),
+          const FrameGridsControl(),
         ],
       ],
     );
@@ -130,7 +143,11 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
           const CleanFeedControl(),
           const SizedBox(height: 16),
         ],
+        const ColorBarsControl(),
+        const SizedBox(height: 8),
         _buildCameraOutputSettings(),
+        const SizedBox(height: 16),
+        const PresetSection(),
       ],
     );
   }
@@ -146,11 +163,19 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
           const SizedBox(height: 8),
           const ZebraControl(),
           const SizedBox(height: 8),
+          const FalseColorControl(),
+          const SizedBox(height: 8),
           const FrameGuidesControl(),
+          const SizedBox(height: 8),
+          const SafeAreaControl(),
+          const SizedBox(height: 8),
+          const FrameGridsControl(),
           const SizedBox(height: 8),
           const DisplayLutControl(),
           const SizedBox(height: 8),
           const CleanFeedControl(),
+          const SizedBox(height: 8),
+          const ColorBarsControl(),
         ],
       ],
     );

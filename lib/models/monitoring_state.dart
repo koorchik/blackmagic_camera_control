@@ -351,6 +351,9 @@ class MonitoringState {
     this.currentCodecFormat,
     this.currentFrameGuideRatio = FrameGuideRatio.ratio16x9,
     this.globalFocusAssistSettings = const FocusAssistState(),
+    this.colorBarsEnabled = false,
+    this.safeAreaPercent = 80,
+    this.activeFrameGrids = const [],
   });
 
   /// List of available display names
@@ -377,6 +380,15 @@ class MonitoringState {
   /// Global focus assist settings (mode, color, intensity - camera-wide)
   final FocusAssistState globalFocusAssistSettings;
 
+  /// Whether color bars test pattern is enabled (camera-wide)
+  final bool colorBarsEnabled;
+
+  /// Safe area percentage (camera-wide, 50-100%)
+  final int safeAreaPercent;
+
+  /// Active frame grids (camera-wide)
+  final List<FrameGridType> activeFrameGrids;
+
   /// Get current display state
   DisplayState? get currentDisplay {
     if (selectedDisplay == null) return null;
@@ -395,6 +407,9 @@ class MonitoringState {
     bool clearCodecFormat = false,
     FrameGuideRatio? currentFrameGuideRatio,
     FocusAssistState? globalFocusAssistSettings,
+    bool? colorBarsEnabled,
+    int? safeAreaPercent,
+    List<FrameGridType>? activeFrameGrids,
   }) {
     return MonitoringState(
       availableDisplays: availableDisplays ?? this.availableDisplays,
@@ -411,6 +426,9 @@ class MonitoringState {
           : (currentCodecFormat ?? this.currentCodecFormat),
       currentFrameGuideRatio: currentFrameGuideRatio ?? this.currentFrameGuideRatio,
       globalFocusAssistSettings: globalFocusAssistSettings ?? this.globalFocusAssistSettings,
+      colorBarsEnabled: colorBarsEnabled ?? this.colorBarsEnabled,
+      safeAreaPercent: safeAreaPercent ?? this.safeAreaPercent,
+      activeFrameGrids: activeFrameGrids ?? this.activeFrameGrids,
     );
   }
 
@@ -447,6 +465,12 @@ class MonitoringState {
         ? FocusAssistState.fromJson(focusAssistJson)
         : const FocusAssistState();
 
+    // Parse active frame grids
+    final frameGridsList = json['activeFrameGrids'] as List<dynamic>? ?? [];
+    final activeFrameGrids = frameGridsList
+        .map((g) => FrameGridType.fromString(g as String?))
+        .toList();
+
     return MonitoringState(
       availableDisplays: availableDisplays,
       selectedDisplay: json['selectedDisplay'] as String?,
@@ -455,6 +479,9 @@ class MonitoringState {
       currentVideoFormat: json['currentVideoFormat'] as String?,
       currentFrameGuideRatio: frameGuideRatio,
       globalFocusAssistSettings: globalFocusAssist,
+      colorBarsEnabled: json['colorBarsEnabled'] as bool? ?? false,
+      safeAreaPercent: json['safeAreaPercent'] as int? ?? 80,
+      activeFrameGrids: activeFrameGrids,
     );
   }
 
@@ -469,7 +496,10 @@ class MonitoringState {
         other.currentVideoFormat == currentVideoFormat &&
         other.currentCodecFormat == currentCodecFormat &&
         other.currentFrameGuideRatio == currentFrameGuideRatio &&
-        other.globalFocusAssistSettings == globalFocusAssistSettings;
+        other.globalFocusAssistSettings == globalFocusAssistSettings &&
+        other.colorBarsEnabled == colorBarsEnabled &&
+        other.safeAreaPercent == safeAreaPercent &&
+        listEquals(other.activeFrameGrids, activeFrameGrids);
   }
 
   @override
@@ -482,6 +512,9 @@ class MonitoringState {
         currentCodecFormat,
         currentFrameGuideRatio,
         globalFocusAssistSettings,
+        colorBarsEnabled,
+        safeAreaPercent,
+        Object.hashAll(activeFrameGrids),
       );
 
   @override

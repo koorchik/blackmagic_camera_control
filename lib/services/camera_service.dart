@@ -144,6 +144,9 @@ class CameraService {
   /// Set white balance tint
   Future<void> setWhiteBalanceTint(int tint) => _apiClient.setWhiteBalanceTint(tint);
 
+  /// Trigger auto white balance
+  Future<void> triggerAutoWhiteBalance() => _apiClient.triggerAutoWhiteBalance();
+
   /// Start recording
   Future<void> startRecording() => _apiClient.startRecording();
 
@@ -409,6 +412,52 @@ class CameraService {
   Future<void> setProgramFeedEnabled(bool enabled) =>
       _apiClient.setProgramFeedEnabled(enabled);
 
+  /// Get color bars enabled
+  Future<bool> getColorBarsEnabled() => _apiClient.getColorBarsEnabled();
+
+  /// Set color bars enabled
+  Future<void> setColorBarsEnabled(bool enabled) =>
+      _apiClient.setColorBarsEnabled(enabled);
+
+  /// Get false color enabled for a display
+  Future<bool> getFalseColorEnabled(String displayName) =>
+      _apiClient.getFalseColorEnabled(displayName);
+
+  /// Set false color enabled for a display
+  Future<void> setFalseColorEnabled(String displayName, bool enabled) =>
+      _apiClient.setFalseColorEnabled(displayName, enabled);
+
+  /// Get safe area enabled for a display
+  Future<bool> getSafeAreaEnabled(String displayName) =>
+      _apiClient.getSafeAreaEnabled(displayName);
+
+  /// Set safe area enabled for a display
+  Future<void> setSafeAreaEnabled(String displayName, bool enabled) =>
+      _apiClient.setSafeAreaEnabled(displayName, enabled);
+
+  /// Get safe area percentage (camera-wide)
+  Future<int> getSafeAreaPercent() => _apiClient.getSafeAreaPercent();
+
+  /// Set safe area percentage (camera-wide)
+  Future<void> setSafeAreaPercent(int percent) =>
+      _apiClient.setSafeAreaPercent(percent);
+
+  /// Get frame grids enabled for a display
+  Future<bool> getFrameGridsEnabled(String displayName) =>
+      _apiClient.getFrameGridsEnabled(displayName);
+
+  /// Set frame grids enabled for a display
+  Future<void> setFrameGridsEnabled(String displayName, bool enabled) =>
+      _apiClient.setFrameGridsEnabled(displayName, enabled);
+
+  /// Get global frame grids settings (camera-wide)
+  Future<List<String>> getGlobalFrameGrids() =>
+      _apiClient.getGlobalFrameGrids();
+
+  /// Set global frame grids settings (camera-wide)
+  Future<void> setGlobalFrameGrids(List<String> grids) =>
+      _apiClient.setGlobalFrameGrids(grids);
+
   /// Get current video format
   Future<Map<String, dynamic>> getVideoFormat() => _apiClient.getVideoFormat();
 
@@ -492,6 +541,12 @@ class CameraService {
             await _safeCall(() => getCleanFeedEnabled(name), false);
         final displayLutEnabled =
             await _safeCall(() => getDisplayLutEnabled(name), false);
+        final falseColorEnabled =
+            await _safeCall(() => getFalseColorEnabled(name), false);
+        final safeAreaEnabled =
+            await _safeCall(() => getSafeAreaEnabled(name), false);
+        final frameGridsEnabled =
+            await _safeCall(() => getFrameGridsEnabled(name), false);
 
         displayStates[name] = DisplayState(
           name: name,
@@ -500,6 +555,9 @@ class CameraService {
           frameGuides: frameGuides,
           cleanFeedEnabled: cleanFeedEnabled,
           displayLutEnabled: displayLutEnabled,
+          falseColorEnabled: falseColorEnabled,
+          safeAreaEnabled: safeAreaEnabled,
+          frameGridsEnabled: frameGridsEnabled,
         );
       } catch (e) {
         // Display not accessible
@@ -540,6 +598,21 @@ class CameraService {
     final globalFocusAssist =
         await _safeCall(() => getGlobalFocusAssist(), const FocusAssistState());
 
+    // Fetch color bars enabled (camera-wide)
+    final colorBarsEnabled =
+        await _safeCall(() => getColorBarsEnabled(), false);
+
+    // Fetch safe area percent (camera-wide)
+    final safeAreaPercent =
+        await _safeCall(() => getSafeAreaPercent(), 80);
+
+    // Fetch active frame grids (camera-wide)
+    final frameGridStrings =
+        await _safeCall(() => getGlobalFrameGrids(), <String>[]);
+    final activeFrameGrids = frameGridStrings
+        .map((g) => FrameGridType.fromString(g))
+        .toList();
+
     return MonitoringState(
       availableDisplays: displays,
       selectedDisplay: displays.isNotEmpty ? displays.first : null,
@@ -549,6 +622,9 @@ class CameraService {
       currentCodecFormat: currentCodecFormat,
       currentFrameGuideRatio: frameGuideRatio,
       globalFocusAssistSettings: globalFocusAssist,
+      colorBarsEnabled: colorBarsEnabled,
+      safeAreaPercent: safeAreaPercent,
+      activeFrameGrids: activeFrameGrids,
     );
   }
 
@@ -750,6 +826,58 @@ class CameraService {
       contrast: contrast,
       contrastPivot: contrastPivot,
       lumaContribution: lumaContribution,
+    );
+  }
+
+  // ========== STATUS INDICATORS ==========
+
+  /// Get power status
+  Future<PowerState> getPowerStatus() async {
+    final data = await _safeCall(() => _apiClient.getPowerStatus(), <String, dynamic>{});
+    if (data.isEmpty) return const PowerState();
+    return PowerState.fromJson(data);
+  }
+
+  /// Get tally status
+  Future<TallyStatus> getTallyStatus() async {
+    final data = await _safeCall(() => _apiClient.getTallyStatus(), <String, dynamic>{});
+    final status = data['status'] as String?;
+    return TallyStatus.fromString(status);
+  }
+
+  // ========== PRESETS ==========
+
+  /// Get list of presets
+  Future<List<String>> getPresets() => _apiClient.getPresets();
+
+  /// Get active preset
+  Future<String?> getActivePreset() => _apiClient.getActivePreset();
+
+  /// Load/apply a preset
+  Future<void> loadPreset(String name) => _apiClient.setActivePreset(name);
+
+  /// Save current settings as a preset
+  Future<void> savePreset(String name) => _apiClient.savePreset(name);
+
+  /// Delete a preset
+  Future<void> deletePreset(String name) => _apiClient.deletePreset(name);
+
+  /// Fetch preset state
+  /// Note: Strips .cset extension from preset names for cleaner display
+  Future<PresetState> fetchPresetState() async {
+    final presets = await _safeCall(() => getPresets(), <String>[]);
+    final activePreset = await _safeCall(() => getActivePreset(), null);
+
+    // Strip .cset extension for cleaner display
+    final cleanPresets = presets.map((p) =>
+        p.endsWith('.cset') ? p.substring(0, p.length - 5) : p).toList();
+    final cleanActive = activePreset != null && activePreset.endsWith('.cset')
+        ? activePreset.substring(0, activePreset.length - 5)
+        : activePreset;
+
+    return PresetState(
+      availablePresets: cleanPresets,
+      activePreset: cleanActive,
     );
   }
 

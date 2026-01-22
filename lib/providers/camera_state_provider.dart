@@ -11,6 +11,7 @@ import '../controllers/audio_controller.dart';
 import '../controllers/media_controller.dart';
 import '../controllers/monitoring_controller.dart';
 import '../controllers/color_controller.dart';
+import '../controllers/preset_controller.dart';
 import '../utils/camera_defaults.dart';
 
 class CameraStateProvider extends ChangeNotifier {
@@ -35,6 +36,7 @@ class CameraStateProvider extends ChangeNotifier {
   late final MediaController _mediaController;
   late final MonitoringController _monitoringController;
   late final ColorController _colorController;
+  late final PresetController _presetController;
 
   // State getters
   CameraState get state => _state;
@@ -46,6 +48,9 @@ class CameraStateProvider extends ChangeNotifier {
   MediaState get media => _state.media;
   MonitoringState get monitoring => _state.monitoring;
   ColorCorrectionState get colorCorrection => _state.colorCorrection;
+  PowerState get power => _state.power;
+  TallyStatus get tallyStatus => _state.tallyStatus;
+  PresetState get preset => _state.preset;
   CameraCapabilities get capabilities => _capabilities;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -94,6 +99,12 @@ class CameraStateProvider extends ChangeNotifier {
       getService: () => _cameraService,
     );
     _colorController = ColorController(
+      getState: () => _state,
+      updateState: _updateState,
+      setError: _setError,
+      getService: () => _cameraService,
+    );
+    _presetController = PresetController(
       getState: () => _state,
       updateState: _updateState,
       setError: _setError,
@@ -228,8 +239,13 @@ class CameraStateProvider extends ChangeNotifier {
       final results = await Future.wait([
         service.fetchFullState(),
         service.fetchCapabilities(),
+        service.getPowerStatus(),
+        service.getTallyStatus(),
       ]);
-      _state = results[0] as CameraState;
+      _state = (results[0] as CameraState).copyWith(
+        power: results[2] as PowerState,
+        tallyStatus: results[3] as TallyStatus,
+      );
       _capabilities = results[1] as CameraCapabilities;
       _error = null;
     } catch (e) {
@@ -242,6 +258,26 @@ class CameraStateProvider extends ChangeNotifier {
 
   /// Refresh the camera state from the API
   Future<void> refresh() => _fetchInitialState();
+
+  /// Refresh just the status indicators (power and tally)
+  Future<void> refreshStatusIndicators() async {
+    final service = _cameraService;
+    if (service == null) return;
+
+    try {
+      final results = await Future.wait([
+        service.getPowerStatus(),
+        service.getTallyStatus(),
+      ]);
+      _state = _state.copyWith(
+        power: results[0] as PowerState,
+        tallyStatus: results[1] as TallyStatus,
+      );
+      notifyListeners();
+    } catch (e) {
+      // Silently ignore status refresh errors
+    }
+  }
 
   /// Clear error state
   void clearError() {
@@ -272,6 +308,7 @@ class CameraStateProvider extends ChangeNotifier {
   void toggleShutterAuto() => _videoController.toggleShutterAuto();
   void setWhiteBalance(int kelvin) => _videoController.setWhiteBalance(kelvin);
   void setWhiteBalanceTint(int tint) => _videoController.setWhiteBalanceTint(tint);
+  Future<void> triggerAutoWhiteBalance() => _videoController.triggerAutoWhiteBalance();
 
   // ========== TRANSPORT CONTROLS (delegated) ==========
   Future<void> startRecording() => _transportController.startRecording();
@@ -322,6 +359,18 @@ class CameraStateProvider extends ChangeNotifier {
   void setProgramFeedEnabled(bool enabled) => _monitoringController.setProgramFeedEnabled(enabled);
   void setVideoFormat(String name, String frameRate) => _monitoringController.setVideoFormat(name, frameRate);
   void setCodecFormat(String codec, String container) => _monitoringController.setCodecFormat(codec, container);
+  void setColorBarsEnabled(bool enabled) => _monitoringController.setColorBarsEnabled(enabled);
+  void setFalseColorEnabled(bool enabled) => _monitoringController.setFalseColorEnabled(enabled);
+  void setSafeAreaEnabled(bool enabled) => _monitoringController.setSafeAreaEnabled(enabled);
+  void setSafeAreaPercent(int percent) => _monitoringController.setSafeAreaPercent(percent);
+  void setFrameGridsEnabled(bool enabled) => _monitoringController.setFrameGridsEnabled(enabled);
+  void setActiveFrameGrids(List<FrameGridType> grids) => _monitoringController.setActiveFrameGrids(grids);
+
+  // ========== PRESET CONTROLS (delegated) ==========
+  Future<void> refreshPresets() => _presetController.refresh();
+  Future<void> loadPreset(String name) => _presetController.loadPreset(name);
+  Future<void> saveAsPreset(String name) => _presetController.saveAsPreset(name);
+  Future<void> deletePreset(String name) => _presetController.deletePreset(name);
 
   // ========== COLOR CORRECTION CONTROLS (delegated) ==========
   Future<void> refreshColorCorrection() => _colorController.refresh();

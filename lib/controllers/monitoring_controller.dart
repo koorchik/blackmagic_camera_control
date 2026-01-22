@@ -239,4 +239,98 @@ class MonitoringController {
       setError('Failed to set codec format: $e');
     });
   }
+
+  /// Set color bars test pattern enabled (camera-wide)
+  void setColorBarsEnabled(bool enabled) {
+    final state = getState();
+    updateState(state.copyWith(
+      monitoring: state.monitoring.copyWith(colorBarsEnabled: enabled),
+    ));
+
+    getService()?.setColorBarsEnabled(enabled).catchError((e) {
+      setError('Failed to set color bars: $e');
+    });
+  }
+
+  /// Set false color enabled for current display
+  void setFalseColorEnabled(bool enabled) {
+    final state = getState();
+    final displayName = state.monitoring.selectedDisplay;
+    if (displayName == null) return;
+
+    final currentDisplay = state.monitoring.displays[displayName];
+    if (currentDisplay == null) return;
+
+    final updatedDisplay = currentDisplay.copyWith(falseColorEnabled: enabled);
+    updateState(state.copyWith(
+      monitoring: state.monitoring.updateDisplay(displayName, updatedDisplay),
+    ));
+
+    getService()?.setFalseColorEnabled(displayName, enabled).catchError((e) {
+      setError('Failed to set false color: $e');
+    });
+  }
+
+  /// Set safe area enabled for current display
+  void setSafeAreaEnabled(bool enabled) {
+    final state = getState();
+    final displayName = state.monitoring.selectedDisplay;
+    if (displayName == null) return;
+
+    final currentDisplay = state.monitoring.displays[displayName];
+    if (currentDisplay == null) return;
+
+    final updatedDisplay = currentDisplay.copyWith(safeAreaEnabled: enabled);
+    updateState(state.copyWith(
+      monitoring: state.monitoring.updateDisplay(displayName, updatedDisplay),
+    ));
+
+    getService()?.setSafeAreaEnabled(displayName, enabled).catchError((e) {
+      setError('Failed to set safe area: $e');
+    });
+  }
+
+  /// Set safe area percentage (camera-wide)
+  void setSafeAreaPercent(int percent) {
+    final state = getState();
+    updateState(state.copyWith(
+      monitoring: state.monitoring.copyWith(safeAreaPercent: percent),
+    ));
+
+    getService()?.setSafeAreaPercent(percent).catchError((e) {
+      setError('Failed to set safe area percent: $e');
+    });
+  }
+
+  /// Set frame grids enabled for current display
+  void setFrameGridsEnabled(bool enabled) {
+    final state = getState();
+    final displayName = state.monitoring.selectedDisplay;
+    if (displayName == null) return;
+
+    final currentDisplay = state.monitoring.displays[displayName];
+    if (currentDisplay == null) return;
+
+    final updatedDisplay = currentDisplay.copyWith(frameGridsEnabled: enabled);
+    updateState(state.copyWith(
+      monitoring: state.monitoring.updateDisplay(displayName, updatedDisplay),
+    ));
+
+    getService()?.setFrameGridsEnabled(displayName, enabled).catchError((e) {
+      setError('Failed to set frame grids: $e');
+    });
+  }
+
+  /// Set active frame grids (camera-wide)
+  void setActiveFrameGrids(List<FrameGridType> grids) {
+    final state = getState();
+    updateState(state.copyWith(
+      monitoring: state.monitoring.copyWith(activeFrameGrids: grids),
+    ));
+
+    final gridStrings = grids.map((g) => g.code).toList();
+    getService()?.setGlobalFrameGrids(gridStrings).catchError((e) {
+      setError('Failed to set frame grids: $e');
+    });
+  }
 }

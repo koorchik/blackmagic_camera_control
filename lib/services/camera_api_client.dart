@@ -142,6 +142,11 @@ class CameraApiClient {
     await _put(ApiEndpoints.videoWhiteBalanceTint, {'whiteBalanceTint': tint.clamp(-50, 50)});
   }
 
+  /// Trigger auto white balance
+  Future<void> triggerAutoWhiteBalance() async {
+    await _put(ApiEndpoints.videoDoAutoWhiteBalance, {});
+  }
+
   /// Get ND filter value
   Future<Map<String, dynamic>> getNDFilter() async {
     return await _get(ApiEndpoints.videoNDFilter);
@@ -894,24 +899,30 @@ class CameraApiClient {
   }
 
   /// Set active preset (apply a preset)
+  /// Note: preset names must end with .cset extension
   Future<void> setActivePreset(String presetName) async {
-    await _put(ApiEndpoints.presetsActive, {'preset': presetName});
+    final name = presetName.endsWith('.cset') ? presetName : '$presetName.cset';
+    await _put(ApiEndpoints.presetsActive, {'preset': name});
   }
 
   /// Save current state as a preset
+  /// Note: preset names must end with .cset extension
   Future<void> savePreset(String presetName) async {
-    await _put(ApiEndpoints.preset(presetName), {});
+    final name = presetName.endsWith('.cset') ? presetName : '$presetName.cset';
+    await _put(ApiEndpoints.preset(name), {});
   }
 
   /// Delete a preset
+  /// Note: preset names must end with .cset extension
   Future<void> deletePreset(String presetName) async {
+    final name = presetName.endsWith('.cset') ? presetName : '$presetName.cset';
     final response = await _httpClient
-        .delete(Uri.parse('$_baseUrl${ApiEndpoints.preset(presetName)}'))
+        .delete(Uri.parse('$_baseUrl${ApiEndpoints.preset(name)}'))
         .timeout(Durations.connectionTimeout);
 
     if (response.statusCode != 200 && response.statusCode != 204) {
       if (response.statusCode == 404) {
-        throw FeatureNotSupportedException(ApiEndpoints.preset(presetName));
+        throw FeatureNotSupportedException(ApiEndpoints.preset(name));
       }
       throw ApiException('DELETE preset failed: ${response.statusCode}');
     }

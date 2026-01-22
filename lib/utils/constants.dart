@@ -22,6 +22,8 @@ class ApiEndpoints {
   static const String videoWhiteBalance = '/control/api/v1/video/whiteBalance';
   static const String videoWhiteBalanceTint =
       '/control/api/v1/video/whiteBalanceTint';
+  static const String videoDoAutoWhiteBalance =
+      '/control/api/v1/video/whiteBalance/doAuto';
   static const String videoGain = '/control/api/v1/video/gain';
   static const String videoNDFilter = '/control/api/v1/video/ndFilter';
   static const String videoNDFilterDisplayMode =

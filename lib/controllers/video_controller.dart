@@ -90,4 +90,22 @@ class VideoController {
       setError('Failed to set tint: $e');
     });
   }
+
+  /// Trigger auto white balance and refresh white balance value
+  Future<void> triggerAutoWhiteBalance() async {
+    try {
+      await getService()?.triggerAutoWhiteBalance();
+      // Wait a moment for camera to calculate, then refresh WB value
+      await Future.delayed(const Duration(milliseconds: 300));
+      final newWb = await getService()?.api.getWhiteBalance();
+      if (newWb != null) {
+        final state = getState();
+        updateState(state.copyWith(
+          video: state.video.copyWith(whiteBalance: newWb),
+        ));
+      }
+    } catch (e) {
+      setError('Failed to trigger auto white balance: $e');
+    }
+  }
 }
