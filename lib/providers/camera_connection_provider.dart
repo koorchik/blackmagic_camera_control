@@ -30,6 +30,11 @@ class CameraConnectionProvider extends ChangeNotifier {
   String _errorMessage = '';
   CameraService? _cameraService;
 
+  // Camera info
+  String? _cameraModel;
+  String? _cameraDeviceName;
+  String? _softwareVersion;
+
   // Discovery state
   DiscoveryStatus _discoveryStatus = DiscoveryStatus.idle;
   List<DiscoveredCamera> _discoveredCameras = [];
@@ -43,6 +48,19 @@ class CameraConnectionProvider extends ChangeNotifier {
   String get errorMessage => _errorMessage;
   CameraService? get cameraService => _cameraService;
   bool get isConnected => _status == ConnectionStatus.connected;
+
+  // Camera info getters
+  String? get cameraModel => _cameraModel;
+  String? get cameraDeviceName => _cameraDeviceName;
+  String? get softwareVersion => _softwareVersion;
+
+  /// Display name for the camera (model or host)
+  String get cameraDisplayName {
+    if (_cameraModel != null && _cameraModel!.isNotEmpty) {
+      return _cameraModel!;
+    }
+    return _cameraHost;
+  }
 
   // Discovery getters
   DiscoveryStatus get discoveryStatus => _discoveryStatus;
@@ -82,6 +100,9 @@ class CameraConnectionProvider extends ChangeNotifier {
         await _cameraService!.connectWebSocket();
         _status = ConnectionStatus.connected;
 
+        // Fetch camera info (model, device name)
+        await _fetchCameraInfo();
+
         // Save hostname for next time
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(PrefsKeys.lastCameraIp, host);
@@ -109,7 +130,29 @@ class CameraConnectionProvider extends ChangeNotifier {
     _status = ConnectionStatus.disconnected;
     _resolvedIp = '';
     _errorMessage = '';
+    _cameraModel = null;
+    _cameraDeviceName = null;
+    _softwareVersion = null;
     notifyListeners();
+  }
+
+  /// Fetch camera info from the system/product endpoint
+  Future<void> _fetchCameraInfo() async {
+    if (_cameraService == null) return;
+    try {
+      final info = await _cameraService!.getSystemInfo();
+      debugPrint('Camera system info: $info');
+      // Try various field names the API might use
+      _cameraModel = info['productName'] as String? ??
+          info['model'] as String? ??
+          info['product'] as String? ??
+          info['name'] as String?;
+      _cameraDeviceName = info['deviceName'] as String?;
+      _softwareVersion = info['softwareVersion'] as String?;
+    } catch (e) {
+      debugPrint('Failed to fetch camera info: $e');
+      // Ignore errors - camera info is optional
+    }
   }
 
   void _setError(String message) {

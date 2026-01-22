@@ -551,6 +551,11 @@ class CameraService {
     );
   }
 
+  // ========== SYSTEM INFO ==========
+
+  /// Get system/product info (model name, etc.)
+  Future<Map<String, dynamic>> getSystemInfo() => _apiClient.getSystemInfo();
+
   // ========== CAPABILITIES DISCOVERY ==========
 
   /// Fetch camera capabilities (supported ISOs, shutter speeds, etc.)

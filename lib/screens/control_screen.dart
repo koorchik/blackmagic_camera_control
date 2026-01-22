@@ -8,8 +8,6 @@ import '../widgets/exposure/shutter_control.dart';
 import '../widgets/exposure/white_balance_control.dart';
 import '../widgets/lens/iris_control.dart';
 import '../widgets/lens/zoom_control.dart';
-import '../widgets/transport/record_button.dart';
-import '../widgets/transport/timecode_display.dart';
 import '../widgets/slate/slate_card.dart';
 
 class ControlScreen extends StatelessWidget {
@@ -44,8 +42,6 @@ class ControlScreen extends StatelessWidget {
           const WhiteBalanceControl(),
           const SizedBox(height: 16),
           const SlateCard(),
-          const SizedBox(height: 16),
-          _buildTransportCard(),
         ],
       ),
     );
@@ -72,14 +68,12 @@ class ControlScreen extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           // Right column - Video settings
-          Expanded(
+          const Expanded(
             child: Column(
               children: [
-                const IsoSelector(),
-                const ShutterControl(),
-                const WhiteBalanceControl(),
-                const SizedBox(height: 8),
-                _buildTransportCard(),
+                IsoSelector(),
+                ShutterControl(),
+                WhiteBalanceControl(),
               ],
             ),
           ),
@@ -90,21 +84,6 @@ class ControlScreen extends StatelessWidget {
 
   static Widget _buildFocusCard() {
     return const _FocusCard();
-  }
-
-  static Widget _buildTransportCard() {
-    return const Card(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TimecodeDisplay(),
-            SizedBox(height: 16),
-            RecordButton(),
-          ],
-        ),
-      ),
-    );
   }
 }
 

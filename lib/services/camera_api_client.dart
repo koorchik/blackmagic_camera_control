@@ -551,6 +551,18 @@ class CameraApiClient {
     await _put(ApiEndpoints.colorHue, {'hue': value});
   }
 
+  // ========== SYSTEM INFO ==========
+
+  /// Get system/product info (model name, etc.)
+  Future<Map<String, dynamic>> getSystemInfo() async {
+    try {
+      return await _get(ApiEndpoints.systemProduct);
+    } catch (e) {
+      // Return empty map if endpoint not available
+      return {};
+    }
+  }
+
   // ========== CAPABILITIES DISCOVERY ==========
 
   /// Get supported ISO values

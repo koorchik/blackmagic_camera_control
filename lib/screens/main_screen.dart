@@ -46,7 +46,25 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(connection.cameraIp),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              connection.softwareVersion != null
+                  ? '${connection.cameraDisplayName} (v${connection.softwareVersion})'
+                  : connection.cameraDisplayName,
+              style: const TextStyle(fontSize: 16),
+            ),
+            if (connection.cameraModel != null)
+              Text(
+                connection.cameraIp,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(179),
+                ),
+              ),
+          ],
+        ),
         actions: [
           if (cameraState.isLoading)
             const Padding(
