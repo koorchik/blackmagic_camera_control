@@ -84,6 +84,40 @@ Controllers: `LensController`, `VideoController`, `TransportController`, `SlateC
 - **Optimistic UI**: State changes immediately, API calls in background
 - **Persistence**: Last camera IP stored via SharedPreferences (`PrefsKeys.lastCameraIp`)
 
+## Reusable UI Components
+
+Use widgets from `lib/widgets/common/` to maintain consistency:
+
+| Component | Use Case |
+|-----------|----------|
+| `ControlCard` | Card wrapper with standard padding |
+| `ToggleControlRow` | Icon + title + description + Switch |
+| `DiscreteSliderControl<T>` | Slider with discrete values (ISO, shutter) |
+| `ContinuousSliderControl` | Slider with debounce-aware state (focus, iris, zoom) |
+| `CollapsibleControlCard` | Card with toggle that shows/hides content |
+| `DropdownControlRow<T>` | Icon + title + dropdown selector |
+| `ChipSelectionGroup<T>` | Wrap of ChoiceChips |
+| `ResponsiveLayout` | LayoutBuilder wrapper with breakpoint handling |
+
+### UI Guidelines
+
+1. **Always prefer common components** over duplicating patterns
+2. **Use `Spacing` constants** instead of `SizedBox(height: 16)` - use `Spacing.verticalLg`
+3. **Use `Breakpoints.medium`** instead of hardcoded `800` for responsive layouts
+4. **ChoiceChip**: Use `ChipSelectionGroup` - it handles `showCheckmark: false` automatically
+5. **Slider debouncing**: Use `ContinuousSliderControl` - it handles `_draggingValue` state internally
+
+### Constants (`lib/utils/constants.dart`)
+
+- `Spacing.xs/sm/md/lg/xl/xxl` - Spacing values (4/8/12/16/24/32)
+- `Spacing.cardPadding` - Standard card padding `EdgeInsets.all(16)`
+- `Spacing.verticalSm/Md/Lg` - Const SizedBox widgets for vertical spacing
+- `Spacing.horizontalSm/Md/Lg` - Const SizedBox widgets for horizontal spacing
+- `Breakpoints.compact/medium/expanded` - Layout breakpoints (600/800/1000)
+- `Styles.borderRadiusSmall` - Standard small border radius (8.0)
+- `Styles.sliderLabelFontSize` - Slider sparse label font size (10.0)
+- `Styles.sliderValueFontSize` - Slider value display font size (14.0)
+
 ## Camera REST API Docs
 
 Files from the folder docs/rest-api-specs

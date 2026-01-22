@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/camera_state_provider.dart';
 import '../../models/camera_state.dart';
+import '../../utils/constants.dart';
 
 /// Widget for shot type selection with choice chips.
 class ShotTypeSelector extends StatelessWidget {
@@ -24,10 +25,10 @@ class ShotTypeSelector extends StatelessWidget {
           'Shot Type',
           style: Theme.of(context).textTheme.bodySmall,
         ),
-        const SizedBox(height: 8),
+        Spacing.verticalSm,
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: Spacing.sm,
+          runSpacing: Spacing.sm,
           children: ShotType.values.map((type) {
             final isSelected = slate.shotType == type;
             final label = isSelected ? '${type.code} - ${type.label}' : type.code;

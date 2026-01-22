@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/camera_state_provider.dart';
 import '../../models/camera_capabilities.dart';
+import '../../utils/constants.dart';
 
 class CodecFormatSelector extends StatelessWidget {
   const CodecFormatSelector({super.key});
@@ -16,11 +17,11 @@ class CodecFormatSelector extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: Spacing.cardPadding,
         child: Row(
           children: [
             const Icon(Icons.video_settings_outlined),
-            const SizedBox(width: 12),
+            Spacing.horizontalMd,
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

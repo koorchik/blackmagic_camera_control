@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/video_state.dart';
 import '../../providers/camera_state_provider.dart';
+import '../../utils/constants.dart';
+import '../common/control_card.dart';
+import '../common/chip_selection_group.dart';
 
 class WhiteBalanceControl extends StatelessWidget {
   const WhiteBalanceControl({super.key});
@@ -11,58 +14,58 @@ class WhiteBalanceControl extends StatelessWidget {
     final cameraState = context.watch<CameraStateProvider>();
     final whiteBalance = cameraState.video.whiteBalance;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'WHITE BALANCE',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                Text(
-                  '${whiteBalance}K',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Slider(
-              value: whiteBalance.toDouble(),
-              min: 2500,
-              max: 10000,
-              divisions: 30,
-              label: '${whiteBalance}K',
-              onChanged: (value) {
-                cameraState.setWhiteBalance(value.round());
-              },
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: VideoState.whiteBalancePresets.entries.map((entry) {
-                final isSelected = (entry.value - whiteBalance).abs() < 100;
-                return ChoiceChip(
-                  label: Text(entry.key),
-                  selected: isSelected,
-                  showCheckmark: false,
-                  onSelected: (_) {
-                    cameraState.setWhiteBalance(entry.value);
-                  },
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+    // Find the matching preset (within 100K tolerance)
+    final presetEntries = VideoState.whiteBalancePresets.entries.toList();
+    final selectedPreset = presetEntries
+        .where((entry) => (entry.value - whiteBalance).abs() < 100)
+        .map((entry) => entry.key)
+        .firstOrNull;
+
+    return ControlCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'WHITE BALANCE',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              Text(
+                '${whiteBalance}K',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+              ),
+            ],
+          ),
+          Spacing.verticalMd,
+          Slider(
+            value: whiteBalance.toDouble(),
+            min: 2500,
+            max: 10000,
+            divisions: 30,
+            label: '${whiteBalance}K',
+            onChanged: (value) {
+              cameraState.setWhiteBalance(value.round());
+            },
+          ),
+          Spacing.verticalSm,
+          ChipSelectionGroup<String>(
+            values: presetEntries.map((e) => e.key).toList(),
+            selectedValue: selectedPreset,
+            onSelected: (presetName) {
+              final value = VideoState.whiteBalancePresets[presetName];
+              if (value != null) {
+                cameraState.setWhiteBalance(value);
+              }
+            },
+            labelBuilder: (presetName) => presetName,
+          ),
+        ],
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 /// API endpoints for Blackmagic Camera REST API
 class ApiEndpoints {
   ApiEndpoints._();
@@ -193,4 +195,48 @@ class DiscoveryConstants {
     'pyxis-6k.local',
     'ursa-cine-12k-lf.local',
   ];
+}
+
+/// Spacing constants for consistent UI layout
+class Spacing {
+  Spacing._();
+
+  static const double xs = 4.0;
+  static const double sm = 8.0;
+  static const double md = 12.0;
+  static const double lg = 16.0;
+  static const double xl = 24.0;
+  static const double xxl = 32.0;
+
+  static const EdgeInsets cardPadding = EdgeInsets.all(16);
+
+  // Reusable const SizedBox widgets
+  static const SizedBox verticalXs = SizedBox(height: xs);
+  static const SizedBox verticalSm = SizedBox(height: sm);
+  static const SizedBox verticalMd = SizedBox(height: md);
+  static const SizedBox verticalLg = SizedBox(height: lg);
+  static const SizedBox verticalXl = SizedBox(height: xl);
+  static const SizedBox horizontalSm = SizedBox(width: sm);
+  static const SizedBox horizontalMd = SizedBox(width: md);
+  static const SizedBox horizontalLg = SizedBox(width: lg);
+}
+
+/// Layout breakpoints for responsive design
+class Breakpoints {
+  Breakpoints._();
+
+  static const double compact = 600;
+  static const double medium = 800;
+  static const double expanded = 1000;
+}
+
+/// Styling constants
+class Styles {
+  Styles._();
+
+  static const double borderRadiusSmall = 8.0;
+  /// Font size for sparse labels below sliders (e.g., f-stop numbers)
+  static const double sliderLabelFontSize = 10.0;
+  /// Font size for slider value display (right side of slider)
+  static const double sliderValueFontSize = 14.0;
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/camera_state.dart';
+import '../../utils/constants.dart';
 import 'color_wheel.dart';
 
 /// Type of color wheel determining value ranges
@@ -245,11 +246,12 @@ class _ColorWheelCardState extends State<ColorWheelCard> {
           ),
         ),
         SizedBox(
-          width: 48,
+          width: 52,
           child: Text(
             value.toStringAsFixed(2),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontFamily: 'monospace',
+                  fontSize: Styles.sliderValueFontSize,
                 ),
             textAlign: TextAlign.end,
           ),

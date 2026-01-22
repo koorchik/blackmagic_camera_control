@@ -257,7 +257,6 @@ class CameraService {
 
         // Get level/gain data from the level endpoint
         final levelData = await _safeCall(() => getAudioLevelFull(i), <String, dynamic>{});
-        print('[Audio Ch$i] Level endpoint response: $levelData');
 
         // Parse all possible gain-related fields
         // The 'normalised' field could be gain OR meter level depending on camera
@@ -279,8 +278,6 @@ class CameraService {
         // Note: API uses uppercase 'Min' and 'Max' keys
         final minGain = (gainRange?['Min'] as num?)?.toDouble() ?? 0.0;
         final maxGain = (gainRange?['Max'] as num?)?.toDouble() ?? 36.0;
-        print('[Audio Ch$i] Input description: $inputDesc');
-        print('[Audio Ch$i] Gain range: $minGain to $maxGain dB');
 
         // Extract input names from supported inputs data
         // API returns: [ { "input": "Mic", "available": true }, ... ]
@@ -690,11 +687,7 @@ class CameraService {
 
   /// Set color offset with debouncing
   void setColorOffsetDebounced(ColorWheelValues values) {
-    print('CameraService.setColorOffsetDebounced: $values');
-    _colorDebounce(() {
-      print('CameraService._colorDebounce executing for offset: $values');
-      return _apiClient.setColorOffset(values);
-    });
+    _colorDebounce(() => _apiClient.setColorOffset(values));
   }
 
   /// Get contrast with pivot
@@ -720,11 +713,7 @@ class CameraService {
 
   /// Set luma contribution with debouncing
   void setColorLumaContributionDebounced(double value) {
-    print('CameraService.setColorLumaContributionDebounced: $value');
-    _colorDebounce(() {
-      print('CameraService._colorDebounce executing for lumaContribution: $value');
-      return _apiClient.setColorLumaContribution(value);
-    });
+    _colorDebounce(() => _apiClient.setColorLumaContribution(value));
   }
 
   /// Fetch initial color correction state

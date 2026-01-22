@@ -80,7 +80,6 @@ class ColorController {
 
   /// Set color offset (blacks) - debounced
   void setOffsetDebounced(ColorWheelValues values) {
-    print('ColorController.setOffsetDebounced: $values');
     getService()?.setColorOffsetDebounced(values);
   }
 
@@ -204,14 +203,11 @@ class ColorController {
 
   /// Set luma contribution - debounced
   void setLumaContributionDebounced(double value) {
-    print('ColorController.setLumaContributionDebounced: $value');
     final state = getState();
     updateState(state.copyWith(
       colorCorrection: state.colorCorrection.copyWith(lumaContribution: value),
     ));
-    final service = getService();
-    print('ColorController.setLumaContributionDebounced: service=$service');
-    service?.setColorLumaContributionDebounced(value);
+    getService()?.setColorLumaContributionDebounced(value);
   }
 
   // ========== RESET ==========
