@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Flutter application for controlling Blackmagic cameras via their REST API and WebSocket interface. Supports lens control, video settings, transport, audio, media, monitoring overlays, and color correction.
 
+**Requirements**: Flutter SDK 3.10.7+, Dart SDK ^3.10.7
+
 ## Common Commands
 
 ```bash
@@ -18,21 +20,24 @@ flutter pub get                      # Install dependencies
 flutter build linux --debug          # Build for platform
 ```
 
+Testing uses `mocktail` for mocking.
+
 ## Architecture
 
 **State Management**: Provider pattern with two main providers:
 - `CameraConnectionProvider` - Manages connection state, camera IP persistence, and mDNS discovery
 - `CameraStateProvider` - Holds camera state, manages 8 domain controllers, subscribes to WebSocket updates
 
-**Controllers** (`lib/controllers/`): Domain-specific logic extracted from provider:
-- `LensController` - Focus, iris, zoom, autofocus
-- `VideoController` - ISO, shutter, white balance, auto exposure
-- `TransportController` - Record, stop, timecode
-- `SlateController` - Scene, take, shot type, good take metadata
-- `AudioController` - Channel levels, inputs, phantom power, low-cut filter
-- `MediaController` - Storage devices, format card
-- `MonitoringController` - Focus assist, zebra, frame guides, clean feed
-- `ColorController` - Lift, gamma, gain, saturation, contrast color wheels
+**Controllers** (`lib/controllers/`): Domain-specific logic extracted from provider. Each controller receives callbacks for state access/mutation via constructor injection:
+```dart
+LensController({
+  required this.getState,      // CameraState Function()
+  required this.updateState,   // void Function(CameraState)
+  required this.setError,      // void Function(String)
+  required this.getService,    // CameraService? Function()
+})
+```
+Controllers: `LensController`, `VideoController`, `TransportController`, `SlateController`, `AudioController`, `MediaController`, `MonitoringController`, `ColorController`
 
 **Service Layer** (`lib/services/`):
 - `CameraApiClient` - REST API client for GET/PUT operations to camera endpoints
@@ -59,13 +64,15 @@ flutter build linux --debug          # Build for platform
 - `MonitoringScreen` - Display overlays configuration
 - `ColorScreen` - Color correction wheels
 
-**API Endpoints**: Defined in `lib/utils/constants.dart` - all under `/control/api/v1/`
+**API Endpoints**: Defined in `lib/utils/constants.dart` (`ApiEndpoints` class) - all REST endpoints under `/control/api/v1/`, WebSocket at `ws://{host}/control/api/v1/event/websocket`
+
+**Constants** (`lib/utils/constants.dart`): Also contains `PrefsKeys` (SharedPreferences keys), `Durations` (debounce timings), and `DiscoveryConstants` (mDNS settings)
 
 ## Key Patterns
 
-- Slider values (focus, iris, zoom) use debounced API calls (50ms) to avoid flooding
-- Color correction uses longer debounce (100ms) for stability
-- WebSocket updates partial state; provider merges with existing state
-- 404 responses indicate unsupported features (handled gracefully)
-- Last camera IP persisted via SharedPreferences
-- Optimistic UI updates - state changes immediately, API calls in background
+- **Slider debouncing**: Controllers have paired methods - `setFocusDebounced()` for smooth dragging (API only, 50ms debounce), `setFocusFinal()` for drag end (updates state + immediate API call)
+- **Color correction debouncing**: 100ms for stability
+- **WebSocket state merging**: Partial updates merged with existing state in provider
+- **404 handling**: Indicates unsupported camera features, handled gracefully
+- **Optimistic UI**: State changes immediately, API calls in background
+- **Persistence**: Last camera IP stored via SharedPreferences (`PrefsKeys.lastCameraIp`)
