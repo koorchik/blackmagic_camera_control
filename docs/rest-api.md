@@ -21,68 +21,99 @@ Here is the **Master Developer Documentation** for your Blackmagic Camera Contro
 
 _Physical manipulation of the lens and sensor._
 
-#### **2.1. Lens Control**
+#### **2.1. Lens Control API**
 
-| Feature       | Method | Endpoint      | Payload / Description                                  |
-| ------------- | ------ | ------------- | ------------------------------------------------------ |
-| **Get Focus** | `GET`  | `/lens/focus` | Returns `{"normalised": 0.5}` (0.0=Near, 1.0=Infinity) |
+| Feature | Method | Endpoint | Payload / Description |
+| --- | --- | --- | --- |
+| **Get Iris** | `GET` | `/lens/iris` | Get lens' aperture. |
+| **Set Iris** | `PUT` | `/lens/iris` | Set lens' aperture. Body: `{"apertureStop": 4.0, "normalised": 0.5, "apertureNumber": 4, "adjustmentStep": 1}` |
+| **Get Zoom** | `GET` | `/lens/zoom` | Get lens' zoom. |
+| **Set Zoom** | `PUT` | `/lens/zoom` | Set lens' zoom. Body: `{"focalLength": 50, "normalised": 0.5, "adjustmentFocalLength": 5, "adjustmentNormalised": 0.1}` |
+| **Get Focus** | `GET` | `/lens/focus` | Get lens' focus. |
+| **Set Focus** | `PUT` | `/lens/focus` | Set lens' focus. Body: `{"normalised": 0.5, "focusDistance": 2000}` |
+| **Perform Autofocus** | `PUT` | `/lens/focus/doAutoFocus` | Perform auto focus. Body: `{"position": {"x": 0.5, "y": 0.5}}` |
+| **Get Optical Image Stabilization Status** | `GET` | `/lens/opticalImageStabilization` | Get optical image stabilization status. |
+| **Set Optical Image Stabilization** | `PUT` | `/lens/opticalImageStabilization` | Enable or disable optical image stabilization. Body: `{"enabled": true}` |
+| **Get Iris Description** | `GET` | `/lens/iris/description` | Get detailed description of lens' iris capabilities. |
+| **Get Zoom Description** | `GET` | `/lens/zoom/description` | Get detailed description of lens' zoom capabilities. |
+| **Get Focus Description** | `GET` | `/lens/focus/description` | Get detailed description of lens' focus capabilities. |
 
-|
-| **Set Focus** | `PUT` | `/lens/focus` | Body: `{"normalised": 0.6}` (Manual focus)
+#### **2.2. Video Control API**
 
-|
-| **Trigger AF** | `PUT` | `/lens/focus/doAutoFocus` | Body: `{"position": {"x": 0.5, "y": 0.5}}` (Center ROI)
+| Feature | Method | Endpoint | Payload / Description |
+| --- | --- | --- | --- |
+| **Get ISO** | `GET` | `/video/iso` | Get current ISO. |
+| **Set ISO** | `PUT` | `/video/iso` | Set current ISO. Body: `{"iso": 800}` |
+| **Get Supported ISOs** | `GET` | `/video/supportedISOs` | Get the list of supported ISO settings. |
+| **Get Gain** | `GET` | `/video/gain` | Get current gain value in decibels. |
+| **Set Gain** | `PUT` | `/video/gain` | Set current gain value. Body: `{"gain": 0}` |
+| **Get Supported Gains** | `GET` | `/video/supportedGains` | Get the list of supported gain settings in decibels. |
+| **Get White Balance** | `GET` | `/video/whiteBalance` | Get current white balance. |
+| **Set White Balance** | `PUT` | `/video/whiteBalance` | Set current white balance. Body: `{"whiteBalance": 5600}` |
+| **Get White Balance Description** | `GET` | `/video/whiteBalance/description` | Get white balance range. |
+| **Set White Balance Automatically** | `PUT` | `/video/whiteBalance/doAuto` | Set current white balance automatically. |
+| **Get White Balance Tint** | `GET` | `/video/whiteBalanceTint` | Get white balance tint. |
+| **Set White Balance Tint** | `PUT` | `/video/whiteBalanceTint` | Set white balance tint. Body: `{"whiteBalanceTint": 0}` |
+| **Get White Balance Tint Description** | `GET` | `/video/whiteBalanceTint/description` | Get white balance tint range. |
+| **Get ND Filter** | `GET` | `/video/ndFilter` | Get ND filter stop. |
+| **Set ND Filter** | `PUT` | `/video/ndFilter` | Set ND filter stop. Body: `{"stop": 2.0}` |
+| **Get Supported ND Filters** | `GET` | `/video/supportedNDFilters` | Get the list of available ND filter stops. |
+| **Get Supported ND Filter Display Modes** | `GET` | `/video/supportedNDFilterDisplayModes` | Get the list of supported ND filter display modes. |
+| **Get ND Filter Display Mode** | `GET` | `/video/ndFilter/displayMode` | Get ND filter display mode on the camera. |
+| **Set ND Filter Display Mode** | `PUT` | `/video/ndFilter/displayMode` | Set ND filter display mode on the camera. Body: `{"displayMode": "Stop"}` |
+| **Get ND Filter Selectable** | `GET` | `/video/ndFilterSelectable` | Check if ND filter adjustments are selectable via a slider. |
+| **Get Shutter** | `GET` | `/video/shutter` | Get current shutter. |
+| **Set Shutter** | `PUT` | `/video/shutter` | Set current shutter. Body: `{"shutterSpeed": 100}` or `{"shutterAngle": 172.8}` |
+| **Get Shutter Measurement Mode** | `GET` | `/video/shutter/measurement` | Get the current shutter measurement mode. |
+| **Set Shutter Measurement Mode** | `PUT` | `/video/shutter/measurement` | Set the shutter measurement mode. Body: `{"measurement": "ShutterSpeed"}` |
+| **Get Supported Shutters** | `GET` | `/video/supportedShutters` | Get supported shutter settings based on current camera configuration. |
+| **Get Flicker-Free Shutters** | `GET` | `/video/flickerFreeShutters` | Get flicker-free shutter settings based on current camera configuration. |
+| **Get Auto Exposure** | `GET` | `/video/autoExposure` | Get current auto exposure mode. |
+| **Set Auto Exposure** | `PUT` | `/video/autoExposure` | Set auto exposure. Body: `{"mode": "Continuous"}` |
+| **Get Detail Sharpening** | `GET` | `/video/detailSharpening` | Get the current state of detail sharpening. |
+| **Set Detail Sharpening** | `PUT` | `/video/detailSharpening` | Enable or disable detail sharpening. Body: `{"enabled": true}` |
+| **Get Detail Sharpening Level** | `GET` | `/video/detailSharpeningLevel` | Get the current detail sharpening level. |
+| **Set Detail Sharpening Level** | `PUT` | `/video/detailSharpeningLevel` | Set the detail sharpening level. Body: `{"level": "Medium"}` |
 
-|
-| **Aperture** | `GET` | `/lens/iris` | Returns `{"apertureStop": 5.6, "normalised": 0.4}`
+#### **2.2.1. Camera Control API**
 
-|
-| **Set Aperture** | `PUT` | `/lens/iris` | Body: `{"apertureStop": 4.0}` OR `{"normalised": 0.5}`
+| Feature | Method | Endpoint | Payload / Description |
+| --- | --- | --- | --- |
+| **Get Color Bars Status** | `GET` | `/camera/colorBars` | Get the status of color bars display. |
+| **Set Color Bars Status** | `PUT` | `/camera/colorBars` | Set the status of color bars display. Body: `{"enabled": true}` |
+| **Get Program Feed Display Status** | `GET` | `/camera/programFeedDisplay` | Get the status of program feed display. |
+| **Set Program Feed Display Status** | `PUT` | `/camera/programFeedDisplay` | Set the status of program feed display. Body: `{"enabled": true}` |
+| **Get Tally Status** | `GET` | `/camera/tallyStatus` | Get the tally status of the camera. |
+| **Get Power Status** | `GET` | `/camera/power` | Get the power status of the camera. |
+| **Get Power Display Mode** | `GET` | `/camera/power/displayMode` | Get the power display mode of the camera. |
+| **Set Power Display Mode** | `PUT` | `/camera/power/displayMode` | Set the power display mode of the camera. Body: `{"mode": "Percentage"}` |
+| **Get Timing Reference Lock Status** | `GET` | `/camera/timingReferenceLock` | Get the timing reference lock status. |
 
-|
-| **Zoom** | `PUT` | `/lens/zoom` | Body: `{"focalLength": 50}` (mm) or `{"normalised": 0.5}`
+#### **2.2.2. Immersive Control API**
 
-|
-| **OIS** | `PUT` | `/lens/opticalImageStabilization` | Body: `{"enabled": true}`
+| Feature | Method | Endpoint | Payload / Description |
+| --- | --- | --- | --- |
+| **Get Eye View** | `GET` | `/immersive/display/{displayName}/eye` | Get the current eye view for a specific display. |
+| **Set Eye View** | `PUT` | `/immersive/display/{displayName}/eye` | Set the eye view for a specific display. Body: `{"eye": "Left"}` |
 
-|
+#### **2.3. Color Correction Control API**
 
-#### **2.2. Exposure & Sensor**
-
-| Feature     | Method | Endpoint         | Payload / Description                                 |
-| ----------- | ------ | ---------------- | ----------------------------------------------------- |
-| **Shutter** | `GET`  | `/video/shutter` | Returns `{"shutterSpeed": 50, "shutterAngle": 180.0}` |
-
-|
-| **Set Shutter** | `PUT` | `/video/shutter` | Body: `{"shutterSpeed": 100}` OR `{"shutterAngle": 172.8}`
-
-|
-| **ISO** | `GET` | `/video/iso` | Returns `{"iso": 400}`
-
-|
-| **Set ISO** | `PUT` | `/video/iso` | Body: `{"iso": 800}`
-
-|
-| **White Balance** | `PUT` | `/video/whiteBalance` | Body: `{"whiteBalance": 5600}` (Kelvin)
-
-|
-| **Auto WB** | `PUT` | `/video/whiteBalance/doAuto` | Triggers Auto WB calculation
-
-|
-| **ND Filter** | `PUT` | `/video/ndFilter` | Body: `{"stop": 2.0}` (Stops: 0.0, 2.0, 4.0, 6.0)
-
-|
-| **Auto Exposure** | `PUT` | `/video/autoExposure` | Body: `{"mode": "Continuous"}` (Off, Continuous, OneShot)
-
-|
-
-#### **2.3. Color Correction (CCU)**
-
-_Direct control over internal color processing._
-
-- **Endpoints:** `/colorCorrection/lift`, `/colorCorrection/gamma`, `/colorCorrection/gain`, `/colorCorrection/offset`, `/colorCorrection/contrast`
-
-- **Body Example (Lift):** `{"red": -0.05, "green": -0.05, "blue": -0.05, "luma": -0.05}`
+| Feature | Method | Endpoint | Payload / Description |
+| --- | --- | --- | --- |
+| **Get Lift** | `GET` | `/colorCorrection/lift` | Get color correction lift. |
+| **Set Lift** | `PUT` | `/colorCorrection/lift` | Set color correction lift. Body: `{"red": -0.05, "green": -0.05, "blue": -0.05, "luma": -0.05}` |
+| **Get Gamma** | `GET` | `/colorCorrection/gamma` | Get color correction gamma. |
+| **Set Gamma** | `PUT` | `/colorCorrection/gamma` | Set color correction gamma. Body: `{"red": 0.0, "green": 0.0, "blue": 0.0, "luma": 0.0}` |
+| **Get Gain** | `GET` | `/colorCorrection/gain` | Get color correction gain. |
+| **Set Gain** | `PUT` | `/colorCorrection/gain` | Set color correction gain. Body: `{"red": 0.0, "green": 0.0, "blue": 0.0, "luma": 0.0}` |
+| **Get Offset** | `GET` | `/colorCorrection/offset` | Get color correction offset. |
+| **Set Offset** | `PUT` | `/colorCorrection/offset` | Set color correction offset. Body: `{"red": 0.0, "green": 0.0, "blue": 0.0, "luma": 0.0}` |
+| **Get Contrast** | `GET` | `/colorCorrection/contrast` | Get color correction contrast. |
+| **Set Contrast** | `PUT` | `/colorCorrection/contrast` | Set color correction contrast. Body: `{"pivot": 0.5, "adjust": 1.0}` |
+| **Get Color Properties** | `GET` | `/colorCorrection/color` | Get color correction color properties. |
+| **Set Color Properties** | `PUT` | `/colorCorrection/color` | Set color correction color properties. Body: `{"hue": 0.0, "saturation": 1.0}` |
+| **Get Luma Contribution** | `GET` | `/colorCorrection/lumaContribution` | Get color correction luma contribution. |
+| **Set Luma Contribution** | `PUT` | `/colorCorrection/lumaContribution` | Set color correction luma contribution. Body: `{"lumaContribution": 1.0}` |
 
 ---
 
@@ -190,17 +221,25 @@ Requires `{displayName}` (e.g., "LCD", "HDMI") from `GET /monitoring/display`.
 | **Get False Color** | `GET` | `/monitoring/{displayName}/falseColor` | Get the false color enable state for a specific display. |
 | **Set False Color** | `PUT` | `/monitoring/{displayName}/falseColor` | Set the false color enable state for a specific display. Body: `{"enabled": true}` |
 
-#### **4.2. Audio Control & Filters**
+#### **4.2. Audio Control API**
 
-- **Levels (VU):** `GET /audio/channel/{index}/level`
-
-- **Input Source:** `PUT /audio/channel/{index}/input` → `{"input": "Mic"}` (or "Line")
-
-- **Phantom Power:** `PUT /audio/channel/{index}/phantomPower` → `{"enabled": true}`
-
-- **Low Cut Filter:** `PUT /audio/channel/{index}/lowCutFilter` → `{"enabled": true}`
-
-- **Padding:** `PUT /audio/channel/{index}/padding` → `{"enabled": true}`
+| Feature | Method | Endpoint | Payload / Description |
+| --- | --- | --- | --- |
+| **Get Audio Channels** | `GET` | `/audio/channels` | Get the total number of audio channels available. |
+| **Get Supported Inputs** | `GET` | `/audio/supportedInputs` | Get the list of supported audio inputs. |
+| **Get Channel Input** | `GET` | `/audio/channel/{channelIndex}/input` | Get the audio input (source and type) for the selected channel. |
+| **Set Channel Input** | `PUT` | `/audio/channel/{channelIndex}/input` | Set the audio input for the selected channel. Body: `{"input": "Mic"}` |
+| **Get Channel Input Description** | `GET` | `/audio/channel/{channelIndex}/input/description` | Get the description of the current input of the selected channel. |
+| **Get Channel Supported Inputs** | `GET` | `/audio/channel/{channelIndex}/supportedInputs` | Get the list of supported inputs and their availability to switch to for the selected channel. |
+| **Get Channel Level** | `GET` | `/audio/channel/{channelIndex}/level` | Get the audio input level for the selected channel. |
+| **Set Channel Level** | `PUT` | `/audio/channel/{channelIndex}/level` | Set the audio input level for the selected channel. Body: `{"gain": 0.0, "normalised": 0.5}` |
+| **Get Channel Phantom Power** | `GET` | `/audio/channel/{channelIndex}/phantomPower` | Get the audio input phantom power status for the selected channel. |
+| **Set Channel Phantom Power** | `PUT` | `/audio/channel/{channelIndex}/phantomPower` | Set the audio phantom power for the selected channel. Body: `{"enabled": true}` |
+| **Get Channel Padding** | `GET` | `/audio/channel/{channelIndex}/padding` | Get the audio input padding status for the selected channel. |
+| **Set Channel Padding** | `PUT` | `/audio/channel/{channelIndex}/padding` | Set the audio input padding for the selected channel. Body: `{"enabled": true}` |
+| **Get Channel Low Cut Filter** | `GET` | `/audio/channel/{channelIndex}/lowCutFilter` | Get the audio input low cut filter status for the selected channel. |
+| **Set Channel Low Cut Filter** | `PUT` | `/audio/channel/{channelIndex}/lowCutFilter` | Set the audio input low cut filter for the selected channel. Body: `{"enabled": true}` |
+| **Get Channel Availability** | `GET` | `/audio/channel/{channelIndex}/available` | Get the audio input's current availability for the selected channel. |
 
 #### **4.3. System Control API**
 
@@ -270,25 +309,10 @@ _Do not hardcode values; ask the camera what it supports._
 
 ### **6. Real-Time Notification API (WebSocket)**
 
-- **URL:** `ws://<camera-ip>/control/api/v1/notification`
+Service that notifies subscribers of device state changes.
 
-- **Flow:** Connect -> Handshake -> Subscribe -> Listen.
-- **Subscription Payload:**
-
-```json
-{
-  "action": "subscribe",
-  "properties": [
-    "/lens/focus",
-    "/lens/iris",
-    "/video/iso",
-    "/video/shutter",
-    "/transports/0/record",
-    "/transports/0/timecode",
-    "/audio/channel/0/level",
-    "/media/workingset"
-  ]
-}
-```
-
-- **Event Handling:** Listen for `propertyValueChanged` events and update UI immediately.
+| Feature | Method | Endpoint | Payload / Description |
+| --- | --- | --- | --- |
+| **Subscribe** | `WEBSOCKET` | `ws://<camera-ip>/control/api/v1/notification` | Subscribe to messages from the server/device. On websocket opened, send `{"action": "subscribe", "properties": ["/property/to/subscribe"]}`. Response contains `action` ("subscribe", "unsubscribe", "listSubscriptions", "listProperties", "websocketOpened"), `properties` (array of device properties), `values` (object of property names and values), and `success` (boolean). |
+| **Event Message** | `WEBSOCKET` | N/A | Listen for `propertyValueChanged` events. The event message will have `data.action` as "propertyValueChanged", `data.property` as the property name, and `data.value` as the new value. |
+| **Device Properties** | `WEBSOCKET` | N/A | The value JSON returned via the eventResponse when device properties change. Properties include `/media/workingset`, `/media/active`, `/system`, `/system/codecFormat`, `/system/videoFormat`, `/system/format`, `/system/supportedFormats`, `/timelines/0`, `/transports/0`, `/transports/0/stop`, `/transports/0/play`, `/transports/0/playback`, `/transports/0/record`, `/transports/0/timecode`, `/transports/0/timecode/source`, `/transports/0/clipIndex`, `/slates/nextClip`, `/monitoring/{displayName}/cleanFeed`, `/monitoring/{displayName}/displayLUT`, `/monitoring/{displayName}/zebra`, `/monitoring/{displayName}/focusAssist`, `/monitoring/{displayName}/frameGuide`, `/monitoring/{displayName}/frameGrids`, `/monitoring/{displayName}/safeArea`, `/monitoring/{displayName}/falseColor`, `/monitoring/focusAssist`, `/monitoring/frameGuideRatio`, `/monitoring/frameGrids`, `/monitoring/safeAreaPercent`, `/audio/channel/{channelIndex}/input`, `/audio/channel/{channelIndex}/supportedInputs`, `/audio/channel/{channelIndex}/level`, `/audio/channel/{channelIndex}/phantomPower`, `/audio/channel/{channelIndex}/padding`, `/audio/channel/{channelIndex}/lowCutFilter`, `/audio/channel/{channelIndex}/available`, `/audio/channel/{channelIndex}/input/description`, `/colorCorrection/lift`, `/colorCorrection/gamma`, `/colorCorrection/gain`, `/colorCorrection/offset`, `/colorCorrection/contrast`, `/colorCorrection/color`, `/colorCorrection/lumaContribution`, `/lens/iris`, `/lens/iris/description`, `/lens/focus`, `/lens/focus/description`, `/lens/zoom`, `/lens/zoom/description`, `/presets`, `/presets/active`, `/camera/colorBars`, `/camera/programFeedDisplay`, `/camera/tallyStatus`, `/camera/power`, `/camera/power/displayMode`, `/camera/timingReferenceLock`, `/video/iso`, `/video/supportedISOs`, `/video/gain`, `/video/supportedGains`, `/video/whiteBalance`, `/video/whiteBalance/description`, `/video/whiteBalanceTint`, `/video/whiteBalanceTint/description`, `/video/ndFilter`, `/video/supportedNDFilters`, `/video/ndFilter/displayMode`, `/video/supportedNDFilterDisplayModes`, `/video/ndFilterSelectable`, `/video/shutter`, `/video/shutter/measurement`, `/video/supportedShutters`, `/video/flickerFreeShutters`, `/video/autoExposure`, `/video/detailSharpening`, `/video/detailSharpeningLevel`. |
