@@ -1,0 +1,116 @@
+openapi: 3.0.1
+info:
+  title: Preset Control API
+  description: API For controlling the presets on Blackmagic Design products
+  version: 0.1.0
+servers:
+- url: /control/api/v1
+paths:
+  /presets:
+    get:
+      summary: Get the list of the presets on the camera
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/presetList'
+    post:
+      summary: Send a preset file to the camera
+      description: Uploads a preset file with .cset extension to the camera
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+        description: The preset file must be sent with a Content-Disposition header containing the filename
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/postPresetResponse'
+        400:
+          description: Bad request - missing Content-Disposition header or filename
+  /presets/active:
+    get:
+      summary: Get the currently active preset on the camera
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/activePreset'
+    put:
+      summary: Set the active preset on the camera
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/activePreset'
+      responses:
+        204:
+          description: No Content
+        404:
+          description: Preset file not found
+  /presets/{presetName}:
+    parameters:
+      - in: path
+        name: presetName
+        description: name of the preset file (must end with .cset)
+        required: true
+        schema:
+          type: string
+          pattern: ^([^\x00-\x1F\"\/\:\*\?\<>\|]+).cset$
+    get:
+      summary: Download the preset file
+      responses:
+        200:
+          description: OK
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        404:
+          description: File does not exist
+    put:
+      summary: Save current camera state as a preset
+      description: Creates a new preset or updates an existing preset with the current camera state
+      responses:
+        204:
+          description: No Content
+    delete:
+      summary: Delete a preset from the camera
+      responses:
+        204:
+          description: No Content
+        404:
+          description: Preset file not found
+
+components:
+  schemas:
+    presetList:
+      type: object
+      properties:
+        presets:
+          type: array
+          items:
+            type: string
+          description: List of the presets on the camera (.cset files)
+    postPresetResponse:
+      type: object
+      properties:
+        presetAdded:
+          type: string
+          description: Name of the preset uploaded (without .cset extension)
+    activePreset:
+      type: object
+      properties:
+        preset:
+          type: string
+          description: Name of the active preset (with .cset extension, or 'default')

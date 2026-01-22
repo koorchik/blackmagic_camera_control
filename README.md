@@ -15,8 +15,8 @@ A sleek, cross-platform Flutter application for remotely controlling Blackmagic 
 
 ## Supported Platforms
 
-| Platform | Status |
-|----------|--------|
+| Platform | Status    |
+| -------- | --------- |
 | Linux    | Supported |
 | macOS    | Supported |
 | Windows  | Supported |
@@ -47,17 +47,20 @@ Any Blackmagic camera with REST API support, including:
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/yourusername/blackmagic_camera_control.git
    cd blackmagic_camera_control
    ```
 
 2. **Install dependencies**
+
    ```bash
    flutter pub get
    ```
 
 3. **Run the app**
+
    ```bash
    # Auto-detect device
    flutter run
@@ -79,17 +82,17 @@ Any Blackmagic camera with REST API support, including:
 
 ### Controls Overview
 
-| Control | Description |
-|---------|-------------|
-| **Focus Slider** | Drag to adjust focus (Near to Far) |
-| **Autofocus** | Tap to trigger one-shot autofocus |
-| **Iris** | Adjust aperture (Open to Close) |
-| **Zoom** | Control lens zoom position |
-| **ISO** | Select ISO sensitivity value |
-| **Shutter** | Choose shutter speed (1/24 to 1/2000) |
-| **AUTO** | Toggle automatic shutter exposure |
-| **White Balance** | Adjust color temperature in Kelvin |
-| **Record** | Start/stop recording |
+| Control           | Description                           |
+| ----------------- | ------------------------------------- |
+| **Focus Slider**  | Drag to adjust focus (Near to Far)    |
+| **Autofocus**     | Tap to trigger one-shot autofocus     |
+| **Iris**          | Adjust aperture (Open to Close)       |
+| **Zoom**          | Control lens zoom position            |
+| **ISO**           | Select ISO sensitivity value          |
+| **Shutter**       | Choose shutter speed (1/24 to 1/2000) |
+| **AUTO**          | Toggle automatic shutter exposure     |
+| **White Balance** | Adjust color temperature in Kelvin    |
+| **Record**        | Start/stop recording                  |
 
 ### Tips
 
@@ -159,17 +162,17 @@ This app communicates with cameras using the [Blackmagic Camera REST API](https:
 
 Key endpoints used:
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/control/api/v1/lens/focus` | GET/PUT | Focus position (0.0-1.0) |
-| `/control/api/v1/lens/focus/doAutoFocus` | PUT | Trigger autofocus |
-| `/control/api/v1/lens/iris` | GET/PUT | Aperture position |
-| `/control/api/v1/lens/zoom` | GET/PUT | Zoom position |
-| `/control/api/v1/video/iso` | GET/PUT | ISO value |
-| `/control/api/v1/video/shutter` | GET/PUT | Shutter speed |
-| `/control/api/v1/video/whiteBalance` | GET/PUT | White balance (Kelvin) |
-| `/control/api/v1/video/autoExposure` | PUT | Auto exposure mode |
-| `/control/api/v1/transports/0/record` | GET/PUT | Recording state |
+| Endpoint                                 | Method  | Description              |
+| ---------------------------------------- | ------- | ------------------------ |
+| `/control/api/v1/lens/focus`             | GET/PUT | Focus position (0.0-1.0) |
+| `/control/api/v1/lens/focus/doAutoFocus` | PUT     | Trigger autofocus        |
+| `/control/api/v1/lens/iris`              | GET/PUT | Aperture position        |
+| `/control/api/v1/lens/zoom`              | GET/PUT | Zoom position            |
+| `/control/api/v1/video/iso`              | GET/PUT | ISO value                |
+| `/control/api/v1/video/shutter`          | GET/PUT | Shutter speed            |
+| `/control/api/v1/video/whiteBalance`     | GET/PUT | White balance (Kelvin)   |
+| `/control/api/v1/video/autoExposure`     | PUT     | Auto exposure mode       |
+| `/control/api/v1/transports/0/record`    | GET/PUT | Recording state          |
 
 ## Dependencies
 

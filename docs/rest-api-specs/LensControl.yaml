@@ -1,0 +1,256 @@
+openapi: 3.0.1
+info:
+  title: Lens Control API
+  description: API For controlling the lens on Blackmagic Design products
+  version: 0.1.0
+servers:
+- url: /control/api/v1
+paths:
+  /lens/iris:
+    get:
+      summary: Get lens' aperture
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  continuousApertureAutoExposure:
+                    type: boolean
+                    description: Is Aperture controlled by auto exposure
+                  apertureStop:
+                    $ref: '#/components/schemas/apertureStop'
+                  normalised:
+                    $ref: '#/components/schemas/normalised'
+                  apertureNumber:
+                    $ref: '#/components/schemas/apertureNumber'
+    put:
+      summary: Set lens' aperture
+      description: Only a single property need to be selected. If multiple provided, the order of priority is (apertureStop > normalised > apertureNumber > adjustmentStep)
+      requestBody:
+        content:
+          application/json:
+              schema:
+                type: object
+                properties:
+                  apertureStop:
+                    $ref: '#/components/schemas/apertureStop'
+                  normalised:
+                    $ref: '#/components/schemas/normalised'
+                  apertureNumber:
+                    $ref: '#/components/schemas/apertureNumber'
+                  adjustmentStep:
+                    type: integer
+                    description: Signed value for relative aperture adjustment
+                    minimum: -128
+                    maximum: 127
+      responses:
+        204:
+          description: No Content
+        400:
+          description: Bad Request if out of range value is provided
+        403:
+          description: Forbidden if lens iris is not controllable or is controlled by auto exposure
+  /lens/zoom:
+    get:
+      summary: Get lens' zoom
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  focalLength:
+                    $ref: '#/components/schemas/focalLength'
+                  normalised:
+                    $ref: '#/components/schemas/normalised'
+    put:
+      summary: Set lens' zoom
+      description: Only a single property need to be selected. If multiple provided, the order of priority is (focalLength > normalised)
+      requestBody:
+        content:
+          application/json:
+              schema:
+                type: object
+                properties:
+                  focalLength:
+                    $ref: '#/components/schemas/focalLength'
+                  normalised:
+                    $ref: '#/components/schemas/normalised'
+      responses:
+        204:
+          description: No Content
+        400:
+          description: Bad Request if out of range value is provided
+        403:
+          description: Forbidden if lens zoom is not controllable
+  /lens/focus:
+    get:
+      summary: Get lens' focus
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  normalised:
+                    $ref: '#/components/schemas/normalised'
+    put:
+      summary: Set lens' focus
+      description: Only a single property need to be selected. If multiple provided, the order of priority is (normalised > focusDistance)
+      requestBody:
+        content:
+          application/json:
+              schema:
+                type: object
+                properties:
+                  normalised:
+                    $ref: '#/components/schemas/normalised'
+                  focusDistance:
+                    type: integer
+                    description: Focus distance value
+      responses:
+        204:
+          description: No Content
+        400:
+          description: Bad Request if out of range value is provided
+  /lens/focus/doAutoFocus:
+    put:
+      summary: Perform auto focus
+      description: If no position is provided, center of frame (0.5, 0.5) will be used for autofocus ROI
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                position:
+                  type: object
+                  properties:
+                    x:
+                      type: number
+                      format: float
+                      description: Normalized x coordinate for autofocus ROI
+                      minimum: 0.0
+                      maximum: 1.0
+                    y:
+                      type: number
+                      format: float
+                      description: Normalized y coordinate for autofocus ROI
+                      minimum: 0.0
+                      maximum: 1.0
+      responses:
+        204:
+          description: No Content
+        400:
+          description: Bad Request if out of range value is provided
+        403:
+          description: Forbidden if lens focus is not controllable
+  /lens/iris/description:
+    get:
+      summary: Get detailed description of lens' iris capabilities
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  controllable:
+                    type: boolean
+                    description: If the iris can be controlled
+                  apertureStop:
+                    type: object
+                    properties:
+                      min:
+                        type: number
+                        format: float
+                        description: Minimum aperture stop
+                      max:
+                        type: number
+                        format: float
+                        description: Maximum aperture stop
+
+  /lens/zoom/description:
+    get:
+      summary: Get detailed description of lens' zoom capabilities
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  controllable:
+                    type: boolean
+                    description: If the zoom can be controlled
+                  focalLength:
+                    type: object
+                    properties:
+                      adjustable:
+                        type: boolean
+                        description: If focal length is adjustable
+                      min:
+                        type: integer
+                        description: Minimum focal length
+                      max:
+                        type: integer
+                        description: Maximum focal length
+
+  /lens/focus/description:
+    get:
+      summary: Get detailed description of lens' focus capabilities
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  controllable:
+                    type: boolean
+                    description: If the focus can be controlled
+                  focusDistance:
+                    type: object
+                    properties:
+                      adjustable:
+                        type: boolean
+                        description: If focus distance is adjustable
+                      min:
+                        type: number
+                        format: float
+                        description: Minimum focus distance
+                      max:
+                        type: number
+                        format: float
+                        description: Maximum focus distance
+
+components:
+  schemas:
+    apertureStop:
+      type: number
+      format: float
+      description: Aperture stop value
+    normalised:
+      type: number
+      format: float
+      description: Normalised value
+      maximum: 1.0
+      minimum: 0.0
+    apertureNumber:
+      type: integer
+      description: Aperture number
+    focalLength:
+      type: integer
+      description: Focal length in mm
+      minimum: 0

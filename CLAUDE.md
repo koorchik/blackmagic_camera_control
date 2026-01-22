@@ -25,10 +25,12 @@ Testing uses `mocktail` for mocking.
 ## Architecture
 
 **State Management**: Provider pattern with two main providers:
+
 - `CameraConnectionProvider` - Manages connection state, camera IP persistence, and mDNS discovery
 - `CameraStateProvider` - Holds camera state, manages 8 domain controllers, subscribes to WebSocket updates
 
 **Controllers** (`lib/controllers/`): Domain-specific logic extracted from provider. Each controller receives callbacks for state access/mutation via constructor injection:
+
 ```dart
 LensController({
   required this.getState,      // CameraState Function()
@@ -37,27 +39,32 @@ LensController({
   required this.getService,    // CameraService? Function()
 })
 ```
+
 Controllers: `LensController`, `VideoController`, `TransportController`, `SlateController`, `AudioController`, `MediaController`, `MonitoringController`, `ColorController`
 
 **Service Layer** (`lib/services/`):
+
 - `CameraApiClient` - REST API client for GET/PUT operations to camera endpoints
 - `CameraWebSocket` - WebSocket client for real-time state updates from camera
 - `CameraService` - Facade combining both clients, adds debouncing (50ms sliders, 100ms color)
 - `CameraDiscoveryService` - mDNS-based camera autodiscovery with validation
 
 **Data Flow**:
+
 1. User connects via `ConnectionScreen` → `CameraConnectionProvider.connect(ip)`
 2. On success, `MainScreen` initializes `CameraStateProvider` with `CameraService`
 3. Provider fetches initial state via REST, then subscribes to WebSocket streams
 4. UI widgets read from provider, call controller methods which update local state optimistically then call debounced API
 
 **Models** (`lib/models/`): Immutable state classes with `copyWith`:
+
 - `CameraState` - Root aggregate containing all substates
 - `LensState`, `VideoState`, `TransportState`, `SlateState`
 - `AudioState`, `MediaState`, `MonitoringState`, `ColorCorrectionState`
 - `CameraCapabilities` - Feature discovery (supported ISOs, shutter speeds, etc.)
 
 **Screen Navigation**: Tab-based with 5 main screens after connection:
+
 - `ControlScreen` - Primary lens, exposure, transport controls
 - `AudioScreen` - Audio channel configuration and levels
 - `MediaScreen` - Storage info and format operations
@@ -76,3 +83,11 @@ Controllers: `LensController`, `VideoController`, `TransportController`, `SlateC
 - **404 handling**: Indicates unsupported camera features, handled gracefully
 - **Optimistic UI**: State changes immediately, API calls in background
 - **Persistence**: Last camera IP stored via SharedPreferences (`PrefsKeys.lastCameraIp`)
+
+## Camera REST API Docs
+
+Files from the folder docs/rest-api-specs
+
+## Testing
+
+When I develop, I have camera online on 10.0.0.3 ip address. Use it for checking that endpoints are working correctly.

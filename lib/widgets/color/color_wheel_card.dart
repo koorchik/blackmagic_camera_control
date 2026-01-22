@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 import '../../models/camera_state.dart';
 import 'color_wheel.dart';
 
+/// Type of color wheel determining value ranges
+enum ColorWheelType {
+  lift,   // -2.0 to 2.0, default 0.0
+  gamma,  // -4.0 to 4.0, default 0.0
+  gain,   // 0.0 to 16.0, default 1.0
+  offset, // -2.0 to 2.0, default 0.0
+}
+
 class ColorWheelCard extends StatefulWidget {
   const ColorWheelCard({
     super.key,
@@ -11,6 +19,7 @@ class ColorWheelCard extends StatefulWidget {
     required this.onChanged,
     required this.onChangeEnd,
     this.isGain = false,
+    this.wheelType,
   });
 
   final String title;
@@ -19,6 +28,8 @@ class ColorWheelCard extends StatefulWidget {
   final void Function(ColorWheelValues) onChanged;
   final void Function(ColorWheelValues) onChangeEnd;
   final bool isGain;
+  /// Optional wheel type for correct value ranges. If not provided, uses isGain flag.
+  final ColorWheelType? wheelType;
 
   @override
   State<ColorWheelCard> createState() => _ColorWheelCardState();
@@ -28,12 +39,49 @@ class _ColorWheelCardState extends State<ColorWheelCard> {
   // Track local dragging values for each slider
   ColorWheelValues? _draggingValues;
 
-  ColorWheelValues get _defaultValues => widget.isGain
-      ? ColorWheelValues.gainDefault
-      : ColorWheelValues.liftGammaDefault;
+  /// Get the effective wheel type
+  ColorWheelType get _effectiveWheelType {
+    if (widget.wheelType != null) return widget.wheelType!;
+    return widget.isGain ? ColorWheelType.gain : ColorWheelType.lift;
+  }
 
-  bool get _isAtDefault =>
-      widget.isGain ? widget.values.isGainDefault : widget.values.isDefault;
+  /// Get min/max/center values based on wheel type
+  (double min, double max, double center) get _valueRange {
+    switch (_effectiveWheelType) {
+      case ColorWheelType.lift:
+        return (-2.0, 2.0, 0.0);
+      case ColorWheelType.gamma:
+        return (-4.0, 4.0, 0.0);
+      case ColorWheelType.gain:
+        // 0-2 range puts default 1.0 at center (50%)
+        return (0.0, 2.0, 1.0);
+      case ColorWheelType.offset:
+        // API spec: -8.0 to 8.0
+        return (-8.0, 8.0, 0.0);
+    }
+  }
+
+  ColorWheelValues get _defaultValues {
+    switch (_effectiveWheelType) {
+      case ColorWheelType.gain:
+        return ColorWheelValues.gainDefault;
+      case ColorWheelType.lift:
+      case ColorWheelType.gamma:
+      case ColorWheelType.offset:
+        return ColorWheelValues.liftGammaDefault;
+    }
+  }
+
+  bool get _isAtDefault {
+    switch (_effectiveWheelType) {
+      case ColorWheelType.gain:
+        return widget.values.isGainDefault;
+      case ColorWheelType.lift:
+      case ColorWheelType.gamma:
+      case ColorWheelType.offset:
+        return widget.values.isDefault;
+    }
+  }
 
   // Use local dragging values if actively dragging, otherwise use widget values
   ColorWheelValues get _displayValues => _draggingValues ?? widget.values;
@@ -65,6 +113,9 @@ class _ColorWheelCardState extends State<ColorWheelCard> {
                 blue: _displayValues.blue,
                 size: 180,
                 isGain: widget.isGain,
+                minValue: _valueRange.$1,
+                maxValue: _valueRange.$2,
+                centerValue: _valueRange.$3,
                 onChanged: (r, g, b) {
                   final newValues = _displayValues.copyWith(red: r, green: g, blue: b);
                   setState(() => _draggingValues = newValues);
@@ -166,9 +217,7 @@ class _ColorWheelCardState extends State<ColorWheelCard> {
     ValueChanged<double> onChangeEnd, {
     Color? activeColor,
   }) {
-    // Gain uses 0.0-2.0 range (multiplicative), Lift/Gamma use -1.0 to 1.0 (additive)
-    final minVal = widget.isGain ? 0.0 : -1.0;
-    final maxVal = widget.isGain ? 2.0 : 1.0;
+    final (minVal, maxVal, _) = _valueRange;
 
     return Row(
       children: [

@@ -1,0 +1,175 @@
+openapi: 3.0.1
+info:
+  title: Camera Control API
+  description: API For controlling the Camera specific features on Blackmagic Design products
+  version: 0.1.0
+servers:
+- url: /control/api/v1
+paths:
+  /camera/colorBars:
+    get:
+      summary: Get the status of color bars display
+      responses:
+        '200':
+          description: Returns the current status of color bars
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    description: Indicates if the color bars are currently enabled
+    put:
+      summary: Set the status of color bars display
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                  description: Enable or disable the color bars
+      responses:
+        '204':
+          description: Color bars status updated successfully
+  /camera/programFeedDisplay:
+    get:
+      summary: Get the status of program feed display
+      responses:
+        '200':
+          description: Returns the current status of program feed display
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    description: Indicates if the program feed display is currently enabled
+    put:
+      summary: Set the status of program feed display
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                  description: Enable or disable the program feed display
+      responses:
+        '204':
+          description: Program feed display status updated successfully
+  /camera/tallyStatus:
+    get:
+      summary: Get the tally status of the camera
+      responses:
+        '200':
+          description: Returns the current tally status of the camera
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [None, Preview, Program]
+                    description: Current tally status of the camera
+  /camera/power:
+    get:
+      summary: Get the power status of the camera
+      responses:
+        '200':
+          description: Returns the current power status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  source:
+                    type: string
+                    enum: [Battery, AC, Fiber, USB, POE]
+                    description: Current power source of the camera
+                  milliVolt:
+                    type: integer
+                    description: Current voltage level in millivolts (rounded to nearest 100mV)
+                  batteries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatteryStatus'
+                    description: List of batteries currently connected to the camera
+  /camera/power/displayMode:
+    get:
+      summary: Get the power display mode of the camera
+      responses:
+        '200':
+          description: Returns the current power display mode
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mode:
+                    type: string
+                    enum: [Percentage, Voltage]
+                    description: Current power display mode
+    put:
+      summary: Set the power display mode of the camera
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum: [Percentage, Voltage]
+                  description: Power display mode to set
+      responses:
+        '204':
+          description: Power display mode updated successfully
+        '400':
+          description: Invalid power display mode
+  /camera/timingReferenceLock:
+    get:
+      summary: Get the timing reference lock status
+      responses:
+        '200':
+          description: Returns the timing reference lock status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  locked:
+                    type: boolean
+                    description: Indicates if timing reference is locked
+
+components:
+  schemas:
+    BatteryStatus:
+      type: object
+      properties:
+        milliVolt:
+          type: integer
+          description: Battery voltage in millivolts (rounded to nearest 100mV)
+        chargeRemainingPercent:
+          type: integer
+          description: Remaining battery charge percentage
+        statusFlags:
+          type: array
+          items:
+            type: string
+            enum:
+              - Unknown Battery Status
+              - Battery Is Present
+              - Battery Is Charging
+              - Battery Percentage Is Low
+              - Battery Voltage Is Low
+              - Battery Is Critically Low
+              - Charge Remaining Percentage Is Estimated
+              - Battery Communications Is Active
+              - Battery Is Connected
+          description: List of battery status flags

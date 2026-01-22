@@ -1,0 +1,591 @@
+openapi: 3.0.1
+info:
+  title: Video Control API
+  description: API For controlling the video on Blackmagic Design products
+  version: 0.1.0
+servers:
+- url: /control/api/v1
+paths:
+  /video/iso:
+    get:
+      summary: Get current ISO
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  iso:
+                    type: integer
+                    description: Current ISO value
+                    maximum: 2147483647
+                    minimum: 0
+    put:
+      summary: Set current ISO
+      description: Sets the ISO value.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                iso:
+                  type: integer
+                  description: ISO value to set
+                  maximum: 2147483647
+                  minimum: 0
+      responses:
+        204:
+          description: No Content
+        403:
+          description: ISO cannot be changed in the current state
+  /video/supportedISOs:
+    get:
+      summary: Get the list of supported ISO settings
+      responses:
+        '200':
+          description: List of supported ISO values
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  supportedISOs:
+                    type: array
+                    items:
+                      type: integer
+                    description: Array of supported ISO values
+  /video/gain:
+    get:
+      summary: Get current gain value in decibels
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gain:
+                    type: integer
+                    description: Current gain value in decibels
+                    maximum: 128
+                    minimum: -128
+    put:
+      summary: Set current gain value
+      description: Sets the gain value.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                gain:
+                  type: integer
+                  description: Gain value in decibels to set
+                  maximum: 128
+                  minimum: -128
+      responses:
+        204:
+          description: No Content
+        403:
+          description: Gain cannot be changed in the current state
+  /video/supportedGains:
+    get:
+      summary: Get the list of supported gain settings in decibels
+      responses:
+        '200':
+          description: List of supported gain values in decibels
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  supportedGains:
+                    type: array
+                    items:
+                      type: integer
+                    description: Array of supported gain values in decibels
+  /video/whiteBalance:
+    get:
+      summary: Get current white balance
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  whiteBalance:
+                    type: integer
+                    description: Current white balance
+                    maximum: 10000
+                    minimum: 2500
+    put:
+      summary: Set current white balance
+      description: Sets the white balance. Has no effect if white balance cannot be changed on this device.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                whiteBalance:
+                  type: integer
+                  description: White balance to set
+                  maximum: 10000
+                  minimum: 2500
+      responses:
+        204:
+          description: No Content
+        400:
+          description: Invalid white balance temperature
+  /video/whiteBalance/description:
+      get:
+        summary: Get white balance range
+        responses:
+          200:
+            description: OK
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    whiteBalance:
+                      type: object
+                      properties:
+                        min:
+                          type: integer
+                          description: Minimum color temperature
+                        max:
+                          type: integer
+                          description: Maximum color temperature
+  /video/whiteBalance/doAuto:
+    put:
+      summary: Set current white balance automatically
+      responses:
+        204:
+          description: No Content
+  /video/whiteBalanceTint:
+    get:
+      summary: Get white balance tint
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  whiteBalanceTint:
+                    type: integer
+                    description: Current white balance tint
+                    maximum: 50
+                    minimum: -50
+    put:
+      summary: Set white balance tint
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                whiteBalanceTint:
+                  type: integer
+                  description: White balance tint to set
+                  maximum: 50
+                  minimum: -50
+      responses:
+        204:
+          description: No Content
+        400:
+          description: Invalid white balance tint
+  /video/whiteBalanceTint/description:
+      get:
+        summary: Get white balance tint range
+        responses:
+          200:
+            description: OK
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    whiteBalanceTint:
+                      type: object
+                      properties:
+                        min:
+                          type: integer
+                          description: Minimum white balance tint
+                        max:
+                          type: integer
+                          description: Maximum white balance tint
+  /video/ndFilter:
+    get:
+      summary: Get ND filter stop
+      description: This endpoint may not be available on all products.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stop:
+                    type: number
+                    format: float
+                    description: Current filter power (fStop)
+                    maximum: 15.0
+                    minimum: 0.0
+        501:
+          description: Not implemented for this device
+    put:
+      summary: Set ND filter stop
+      description: This endpoint may not be available on all products.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stop:
+                  type: number
+                  format: float
+                  description: Filter power (fStop) to set
+                  maximum: 15.0
+                  minimum: 0.0
+      responses:
+        204:
+          description: No Content
+        400:
+          description: Invalid ND filter stop
+        501:
+          description: Not implemented for this device
+  /video/supportedNDFilters:
+    get:
+      summary: Get the list of available ND filter stops
+      description: This endpoint may not be available on all products.
+      responses:
+        '200':
+          description: List of available ND filter stops
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  supportedStops:
+                    type: array
+                    items:
+                      type: number
+                      format: float
+                    description: Array of available ND filter stops
+        '501':
+          description: Not implemented for this device
+  /video/supportedNDFilterDisplayModes:
+    get:
+      summary: Get the list of supported ND filter display modes
+      description: This endpoint may not be available on all products.
+      responses:
+        '200':
+          description: List of supported display modes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  supportedDisplayModes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ndFilterDisplayMode'
+                    description: Array of supported display modes
+        '501':
+          description: Not implemented for this device
+  /video/ndFilter/displayMode:
+    get:
+      summary: Get ND filter display mode on the camera
+      description: This endpoint may not be available on all products.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  displayMode:
+                    $ref: '#/components/schemas/ndFilterDisplayMode'
+        501:
+          description: Not implemented for this device
+    put:
+      summary: Set ND filter display mode on the camera
+      description: This endpoint may not be available on all products.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayMode:
+                  $ref: '#/components/schemas/ndFilterDisplayMode'
+      responses:
+        204:
+          description: No Content
+        400:
+          description: Invalid display mode for ND filter
+        501:
+          description: Not implemented for this device
+  /video/ndFilterSelectable:
+    get:
+      summary: Check if ND filter adjustments are selectable via a slider
+      description: This endpoint may not be available on all products.
+      responses:
+        '200':
+          description: Indicates if ND filter is selectable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  selectable:
+                    type: boolean
+                    description: True if ND filter adjustments are selectable via a slider
+        '501':
+          description: Not implemented for this device
+  /video/shutter:
+    get:
+      summary: Get current shutter. Will return either shutter speed or shutter angle depending on shutter measurement in device settings
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  continuousShutterAutoExposure:
+                    type: boolean
+                    description: Is shutter controlled by auto exposure
+                  shutterSpeed:
+                    $ref: '#/components/schemas/shutterSpeed'
+                  shutterAngle:
+                    $ref: '#/components/schemas/shutterAngle'
+    put:
+      summary: Set current shutter
+      description: Setting will have no effect if shutter is controlled by auto exposure.
+      requestBody:
+        description: Only a single property needs to be selected. If more than one is provided, the order of priority is (shutterSpeed > shutterAngle)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                shutterSpeed:
+                  $ref: '#/components/schemas/shutterSpeed'
+                shutterAngle:
+                  $ref: '#/components/schemas/shutterAngle'
+      responses:
+        204:
+          description: No Content
+  /video/shutter/measurement:
+    get:
+      summary: Get the current shutter measurement mode
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  measurement:
+                    $ref: '#/components/schemas/shutterMeasurementMode'
+    put:
+      summary: Set the shutter measurement mode
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                measurement:
+                  $ref: '#/components/schemas/shutterMeasurementMode'
+      responses:
+        204:
+          description: No Content
+        400:
+          description: Invalid shutter measurement
+  /video/supportedShutters:
+    get:
+      summary: Get supported shutter settings based on current camera configuration
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shutterAngles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/shutterAngle'
+                    description: Array of supported shutter angles
+                  shutterSpeeds:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/shutterSpeed'
+                    description: Array of supported shutter speeds
+  /video/flickerFreeShutters:
+    get:
+      summary: Get flicker-free shutter settings based on current camera configuration
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shutterAngles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/shutterAngle'
+                    description: Array of flicker-free shutter angles
+                  shutterSpeeds:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/shutterSpeed'
+                    description: Array of flicker-free shutter speeds
+  /video/autoExposure:
+    get:
+      summary: Get current auto exposure mode
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mode:
+                    type: string
+                    enum: [Off, Continuous, OneShot]
+                    description: Auto exposure mode
+                  type:
+                    type: string
+                    description: Comma-separated list of device types in the auto exposure stack
+    put:
+      summary: Set auto exposure
+      requestBody:
+        description: Auto exposure mode to set
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum: [Off, Continuous, OneShot]
+                  description: Auto exposure mode
+                type:
+                  type: string
+                  description: Comma-separated list of device types in the auto exposure stack
+      responses:
+        204:
+          description: No Content
+        400:
+          description: Failed to set auto exposure mode
+  /video/detailSharpening:
+    get:
+      summary: Get the current state of detail sharpening
+      description: This endpoint may not be available on all products.
+      responses:
+        '200':
+          description: Current detail sharpening state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    description: Whether detail sharpening is enabled
+        '501':
+          description: Not implemented for this device
+    put:
+      summary: Enable or disable detail sharpening
+      description: This endpoint may not be available on all products.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                  description: Enable or disable detail sharpening
+      responses:
+        '204':
+          description: Detail sharpening state updated
+        '501':
+          description: Not implemented for this device
+  /video/detailSharpeningLevel:
+    get:
+      summary: Get the current detail sharpening level
+      description: This endpoint may not be available on all products.
+      responses:
+        '200':
+          description: Current detail sharpening level
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  level:
+                    type: string
+                    enum: [Low, Medium, High]
+                    description: Current detail sharpening level
+        '501':
+          description: Not implemented for this device
+    put:
+      summary: Set the detail sharpening level
+      description: This endpoint may not be available on all products.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level:
+                  type: string
+                  enum: [Low, Medium, High]
+                  description: Desired level of detail sharpening
+      responses:
+        '204':
+          description: Detail sharpening level updated
+        '400':
+          description: Invalid detail sharpening level
+        '501':
+          description: Not implemented for this device
+components:
+  schemas:
+    shutterSpeed:
+      type: integer
+      description: Shutter speed value in fractions of a second (minimum is sensor frame rate)
+      maximum: 50000
+    shutterAngle:
+      type: number
+      format: float
+      description: Shutter angle
+      maximum: 360.0
+      minimum: 1.0
+    ndFilterDisplayMode:
+      type: string
+      enum: [Stop, Number, Fraction]
+    shutterMeasurementMode:
+      type: string
+      enum: [ShutterAngle, ShutterSpeed]

@@ -562,7 +562,11 @@ class CameraService {
 
   /// Set color offset with debouncing
   void setColorOffsetDebounced(ColorWheelValues values) {
-    _colorDebounce(() => _apiClient.setColorOffset(values));
+    print('CameraService.setColorOffsetDebounced: $values');
+    _colorDebounce(() {
+      print('CameraService._colorDebounce executing for offset: $values');
+      return _apiClient.setColorOffset(values);
+    });
   }
 
   /// Get contrast with pivot
@@ -588,7 +592,11 @@ class CameraService {
 
   /// Set luma contribution with debouncing
   void setColorLumaContributionDebounced(double value) {
-    _colorDebounce(() => _apiClient.setColorLumaContribution(value));
+    print('CameraService.setColorLumaContributionDebounced: $value');
+    _colorDebounce(() {
+      print('CameraService._colorDebounce executing for lumaContribution: $value');
+      return _apiClient.setColorLumaContribution(value);
+    });
   }
 
   /// Fetch initial color correction state

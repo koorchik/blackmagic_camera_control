@@ -11,6 +11,9 @@ class ColorWheel extends StatefulWidget {
     required this.onChangeEnd,
     this.size = 200,
     this.isGain = false,
+    this.minValue,
+    this.maxValue,
+    this.centerValue,
   });
 
   final double red;
@@ -21,7 +24,14 @@ class ColorWheel extends StatefulWidget {
   final double size;
   /// If true, values are in Gain mode (0.0-2.0 range with 1.0 as center).
   /// If false, values are in Lift/Gamma mode (-1.0 to 1.0 range with 0.0 as center).
+  /// These defaults are overridden if minValue/maxValue/centerValue are provided.
   final bool isGain;
+  /// Minimum value for the wheel (overrides isGain default)
+  final double? minValue;
+  /// Maximum value for the wheel (overrides isGain default)
+  final double? maxValue;
+  /// Center/neutral value for the wheel (overrides isGain default)
+  final double? centerValue;
 
   @override
   State<ColorWheel> createState() => _ColorWheelState();
@@ -31,6 +41,17 @@ class _ColorWheelState extends State<ColorWheel> {
   late double _red;
   late double _green;
   late double _blue;
+
+  // Get effective min/max/center values
+  double get _minVal => widget.minValue ?? (widget.isGain ? 0.0 : -1.0);
+  double get _maxVal => widget.maxValue ?? (widget.isGain ? 2.0 : 1.0);
+  double get _centerVal => widget.centerValue ?? (widget.isGain ? 1.0 : 0.0);
+
+  // Scale factor: how much the wheel position (-1 to 1) should scale values
+  // For range -2 to 2 with center 0: scale = 2 (so wheel edge = ±2)
+  // For range -4 to 4 with center 0: scale = 4 (so wheel edge = ±4)
+  // For range 0 to 2 with center 1: scale = 1 (so wheel edge = 0 or 2)
+  double get _scale => (_maxVal - _centerVal).abs();
 
   @override
   void initState() {
@@ -57,12 +78,10 @@ class _ColorWheelState extends State<ColorWheel> {
     final center = widget.size / 2;
     final radius = center - 10;
 
-    // For Gain mode, offset values so 1.0 becomes center (0)
-    // For Lift/Gamma, 0.0 is already center
-    final offset = widget.isGain ? 1.0 : 0.0;
-    final normalizedRed = _red - offset;
-    final normalizedGreen = _green - offset;
-    final normalizedBlue = _blue - offset;
+    // Normalize values so center value becomes 0, then scale to -1..1 range
+    final normalizedRed = (_red - _centerVal) / _scale;
+    final normalizedGreen = (_green - _centerVal) / _scale;
+    final normalizedBlue = (_blue - _centerVal) / _scale;
 
     // Calculate position from RGB values
     // dx: red increases right, blue increases left, so dx = (red - blue) / 2
@@ -119,7 +138,7 @@ class _ColorWheelState extends State<ColorWheel> {
   }
 
   void _handlePan(Offset position, double center, double radius) {
-    // Convert position to color offsets
+    // Convert position to color offsets (-1 to 1 range)
     final dx = (position.dx - center) / radius;
     final dy = (center - position.dy) / radius;
 
@@ -128,17 +147,12 @@ class _ColorWheelState extends State<ColorWheel> {
     final clampedDx = distance > 1 ? dx / distance : dx;
     final clampedDy = distance > 1 ? dy / distance : dy;
 
-    // For Gain mode, offset values so center produces 1.0
-    // For Lift/Gamma, center produces 0.0
-    final offset = widget.isGain ? 1.0 : 0.0;
-    final minVal = widget.isGain ? 0.0 : -1.0;
-    final maxVal = widget.isGain ? 2.0 : 1.0;
-
     // Convert to RGB adjustments
     // Simple mapping: x affects red-blue, y affects green
-    _red = (clampedDx + offset).clamp(minVal, maxVal);
-    _blue = (-clampedDx + offset).clamp(minVal, maxVal);
-    _green = (clampedDy + offset).clamp(minVal, maxVal);
+    // Scale by _scale and offset from center value, then clamp to min/max
+    _red = (clampedDx * _scale + _centerVal).clamp(_minVal, _maxVal);
+    _blue = (-clampedDx * _scale + _centerVal).clamp(_minVal, _maxVal);
+    _green = (clampedDy * _scale + _centerVal).clamp(_minVal, _maxVal);
 
     setState(() {});
     widget.onChanged(_red, _green, _blue);

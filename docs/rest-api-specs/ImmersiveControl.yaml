@@ -1,0 +1,69 @@
+openapi: 3.0.1
+info:
+  title: Immersive Control API
+  description: API for controlling immersive camera settings on Blackmagic Design cameras
+  version: 0.1.0
+servers:
+- url: /control/api/v1
+paths:
+  /immersive/display/{displayName}/eye:
+    get:
+      summary: Get the current eye view for a specific display
+      description: Returns which eye (left or right) is currently being displayed on the specified display. May not be available on all products.
+      parameters:
+        - name: displayName
+          in: path
+          required: true
+          description: The display name to query (from /monitoring/display endpoint)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EyeView'
+        '400':
+          description: Invalid display name format
+        '404':
+          description: Display not found
+        '422':
+          description: Failed to get eye view
+    put:
+      summary: Set the eye view for a specific display
+      description: Sets which eye (left or right) is displayed on the specified display. May not be available on all products.
+      parameters:
+        - name: displayName
+          in: path
+          required: true
+          description: The display name to control (from /monitoring/display endpoint)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EyeView'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Invalid input or display name format
+        '404':
+          description: Display not found
+        '422':
+          description: Failed to set eye view
+
+components:
+  schemas:
+    EyeView:
+      type: object
+      required:
+        - eye
+      properties:
+        eye:
+          type: string
+          enum: [Left, Right]
+          description: The eye view to display

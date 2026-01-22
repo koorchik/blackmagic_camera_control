@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/color_correction_state.dart';
 import '../providers/camera_state_provider.dart';
-import '../widgets/color/color_wheel_card.dart';
+import '../widgets/color/color_wheel_card.dart' show ColorWheelCard, ColorWheelType;
 
 class ColorScreen extends StatefulWidget {
   const ColorScreen({super.key});
@@ -54,6 +54,7 @@ class _ColorScreenState extends State<ColorScreen> {
             values: colorCorrection.lift,
             onChanged: cameraState.setColorLiftDebounced,
             onChangeEnd: cameraState.setColorLiftFinal,
+            wheelType: ColorWheelType.lift,
           ),
           const SizedBox(height: 16),
           ColorWheelCard(
@@ -62,6 +63,7 @@ class _ColorScreenState extends State<ColorScreen> {
             values: colorCorrection.gamma,
             onChanged: cameraState.setColorGammaDebounced,
             onChangeEnd: cameraState.setColorGammaFinal,
+            wheelType: ColorWheelType.gamma,
           ),
           const SizedBox(height: 16),
           ColorWheelCard(
@@ -70,7 +72,7 @@ class _ColorScreenState extends State<ColorScreen> {
             values: colorCorrection.gain,
             onChanged: cameraState.setColorGainDebounced,
             onChangeEnd: cameraState.setColorGainFinal,
-            isGain: true,
+            wheelType: ColorWheelType.gain,
           ),
           const SizedBox(height: 16),
           ColorWheelCard(
@@ -79,6 +81,7 @@ class _ColorScreenState extends State<ColorScreen> {
             values: colorCorrection.offset,
             onChanged: cameraState.setColorOffsetDebounced,
             onChangeEnd: cameraState.setColorOffsetFinal,
+            wheelType: ColorWheelType.offset,
           ),
           const SizedBox(height: 16),
           _buildSlidersCard(cameraState, colorCorrection),
@@ -108,6 +111,7 @@ class _ColorScreenState extends State<ColorScreen> {
                   values: colorCorrection.lift,
                   onChanged: cameraState.setColorLiftDebounced,
                   onChangeEnd: cameraState.setColorLiftFinal,
+                  wheelType: ColorWheelType.lift,
                 ),
               ),
               const SizedBox(width: 16),
@@ -118,6 +122,7 @@ class _ColorScreenState extends State<ColorScreen> {
                   values: colorCorrection.gamma,
                   onChanged: cameraState.setColorGammaDebounced,
                   onChangeEnd: cameraState.setColorGammaFinal,
+                  wheelType: ColorWheelType.gamma,
                 ),
               ),
             ],
@@ -133,7 +138,7 @@ class _ColorScreenState extends State<ColorScreen> {
                   values: colorCorrection.gain,
                   onChanged: cameraState.setColorGainDebounced,
                   onChangeEnd: cameraState.setColorGainFinal,
-                  isGain: true,
+                  wheelType: ColorWheelType.gain,
                 ),
               ),
               const SizedBox(width: 16),
@@ -144,6 +149,7 @@ class _ColorScreenState extends State<ColorScreen> {
                   values: colorCorrection.offset,
                   onChanged: cameraState.setColorOffsetDebounced,
                   onChangeEnd: cameraState.setColorOffsetFinal,
+                  wheelType: ColorWheelType.offset,
                 ),
               ),
             ],
@@ -176,6 +182,7 @@ class _ColorScreenState extends State<ColorScreen> {
                   values: colorCorrection.lift,
                   onChanged: cameraState.setColorLiftDebounced,
                   onChangeEnd: cameraState.setColorLiftFinal,
+                  wheelType: ColorWheelType.lift,
                 ),
               ),
               const SizedBox(width: 16),
@@ -186,6 +193,7 @@ class _ColorScreenState extends State<ColorScreen> {
                   values: colorCorrection.gamma,
                   onChanged: cameraState.setColorGammaDebounced,
                   onChangeEnd: cameraState.setColorGammaFinal,
+                  wheelType: ColorWheelType.gamma,
                 ),
               ),
               const SizedBox(width: 16),
@@ -196,7 +204,7 @@ class _ColorScreenState extends State<ColorScreen> {
                   values: colorCorrection.gain,
                   onChanged: cameraState.setColorGainDebounced,
                   onChangeEnd: cameraState.setColorGainFinal,
-                  isGain: true,
+                  wheelType: ColorWheelType.gain,
                 ),
               ),
               const SizedBox(width: 16),
@@ -207,6 +215,7 @@ class _ColorScreenState extends State<ColorScreen> {
                   values: colorCorrection.offset,
                   onChanged: cameraState.setColorOffsetDebounced,
                   onChangeEnd: cameraState.setColorOffsetFinal,
+                  wheelType: ColorWheelType.offset,
                 ),
               ),
             ],
