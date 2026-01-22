@@ -324,15 +324,33 @@ class CameraStateProvider extends ChangeNotifier {
 
   // ========== COLOR CORRECTION CONTROLS (delegated) ==========
   Future<void> refreshColorCorrection() => _colorController.refresh();
+  // Lift (shadows)
   void setColorLiftDebounced(ColorWheelValues values) => _colorController.setLiftDebounced(values);
   void setColorLiftFinal(ColorWheelValues values) => _colorController.setLiftFinal(values);
+  // Gamma (midtones)
   void setColorGammaDebounced(ColorWheelValues values) => _colorController.setGammaDebounced(values);
   void setColorGammaFinal(ColorWheelValues values) => _colorController.setGammaFinal(values);
+  // Gain (highlights)
   void setColorGainDebounced(ColorWheelValues values) => _colorController.setGainDebounced(values);
   void setColorGainFinal(ColorWheelValues values) => _colorController.setGainFinal(values);
+  // Offset (blacks)
+  void setColorOffsetDebounced(ColorWheelValues values) => _colorController.setOffsetDebounced(values);
+  void setColorOffsetFinal(ColorWheelValues values) => _colorController.setOffsetFinal(values);
+  // Saturation
   void setColorSaturation(double value) => _colorController.setSaturation(value);
-  void setColorContrast(double value) => _colorController.setContrast(value);
+  void setColorSaturationDebounced(double value) => _colorController.setSaturationDebounced(value);
+  // Hue
   void setColorHue(double value) => _colorController.setHue(value);
+  void setColorHueDebounced(double value) => _colorController.setHueDebounced(value);
+  // Contrast with pivot
+  void setColorContrast(double value) => _colorController.setContrast(value);
+  void setColorContrastDebounced(double value) => _colorController.setContrastDebounced(value);
+  void setColorContrastPivot(double value) => _colorController.setContrastPivot(value);
+  void setColorContrastPivotDebounced(double value) => _colorController.setContrastPivotDebounced(value);
+  // Luma contribution
+  void setColorLumaContribution(double value) => _colorController.setLumaContribution(value);
+  void setColorLumaContributionDebounced(double value) => _colorController.setLumaContributionDebounced(value);
+  // Reset
   void resetColorCorrection() => _colorController.reset();
 
   Future<void> _cleanup() async {

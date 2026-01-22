@@ -540,42 +540,91 @@ class CameraService {
     _colorDebounce(() => _apiClient.setColorGain(values));
   }
 
-  /// Get saturation
-  Future<double> getColorSaturation() => _apiClient.getColorSaturation();
+  /// Get color properties (hue and saturation) from combined endpoint
+  Future<Map<String, double>> getColorProperties() =>
+      _apiClient.getColorProperties();
 
-  /// Set saturation
-  Future<void> setColorSaturation(double value) =>
-      _apiClient.setColorSaturation(value);
+  /// Set color properties (hue and/or saturation)
+  Future<void> setColorProperties({double? hue, double? saturation}) =>
+      _apiClient.setColorProperties(hue: hue, saturation: saturation);
 
-  /// Get contrast
-  Future<double> getColorContrast() => _apiClient.getColorContrast();
+  /// Set color properties with debouncing
+  void setColorPropertiesDebounced({double? hue, double? saturation}) {
+    _colorDebounce(() => _apiClient.setColorProperties(hue: hue, saturation: saturation));
+  }
 
-  /// Set contrast
-  Future<void> setColorContrast(double value) =>
-      _apiClient.setColorContrast(value);
+  /// Get color offset
+  Future<ColorWheelValues> getColorOffset() => _apiClient.getColorOffset();
 
-  /// Get hue
-  Future<double> getColorHue() => _apiClient.getColorHue();
+  /// Set color offset
+  Future<void> setColorOffset(ColorWheelValues values) =>
+      _apiClient.setColorOffset(values);
 
-  /// Set hue
-  Future<void> setColorHue(double value) => _apiClient.setColorHue(value);
+  /// Set color offset with debouncing
+  void setColorOffsetDebounced(ColorWheelValues values) {
+    _colorDebounce(() => _apiClient.setColorOffset(values));
+  }
+
+  /// Get contrast with pivot
+  Future<Map<String, dynamic>> getColorContrastWithPivot() =>
+      _apiClient.getColorContrastWithPivot();
+
+  /// Set contrast with pivot
+  Future<void> setColorContrastWithPivot(double adjust, double pivot) =>
+      _apiClient.setColorContrastWithPivot(adjust, pivot);
+
+  /// Set contrast with pivot (debounced)
+  void setColorContrastWithPivotDebounced(double adjust, double pivot) {
+    _colorDebounce(() => _apiClient.setColorContrastWithPivot(adjust, pivot));
+  }
+
+  /// Get luma contribution
+  Future<double> getColorLumaContribution() =>
+      _apiClient.getColorLumaContribution();
+
+  /// Set luma contribution
+  Future<void> setColorLumaContribution(double value) =>
+      _apiClient.setColorLumaContribution(value);
+
+  /// Set luma contribution with debouncing
+  void setColorLumaContributionDebounced(double value) {
+    _colorDebounce(() => _apiClient.setColorLumaContribution(value));
+  }
 
   /// Fetch initial color correction state
   Future<ColorCorrectionState> fetchColorCorrectionState() async {
+    // Fetch color wheels
     final lift = await _safeCall(() => getColorLift(), const ColorWheelValues());
     final gamma = await _safeCall(() => getColorGamma(), const ColorWheelValues());
-    final gain = await _safeCall(() => getColorGain(), const ColorWheelValues());
-    final saturation = await _safeCall(() => getColorSaturation(), 1.0);
-    final contrast = await _safeCall(() => getColorContrast(), 1.0);
-    final hue = await _safeCall(() => getColorHue(), 0.0);
+    final gain = await _safeCall(() => getColorGain(), ColorWheelValues.gainDefault);
+    final offset = await _safeCall(() => getColorOffset(), const ColorWheelValues());
+
+    // Fetch combined hue/saturation from /colorCorrection/color
+    final colorProps = await _safeCall(
+        () => getColorProperties(), {'hue': 0.0, 'saturation': 1.0});
+    final hue = colorProps['hue'] ?? 0.0;
+    final saturation = colorProps['saturation'] ?? 1.0;
+
+    // Fetch contrast with pivot from /colorCorrection/contrast
+    final contrastData = await _safeCall(
+        () => getColorContrastWithPivot(), <String, dynamic>{});
+    // API returns 'adjust' for contrast value, 'pivot' for pivot point
+    final contrast = (contrastData['adjust'] as num?)?.toDouble() ?? 1.0;
+    final contrastPivot = (contrastData['pivot'] as num?)?.toDouble() ?? 0.5;
+
+    // Fetch luma contribution
+    final lumaContribution = await _safeCall(() => getColorLumaContribution(), 1.0);
 
     return ColorCorrectionState(
       lift: lift,
       gamma: gamma,
       gain: gain,
+      offset: offset,
       saturation: saturation,
-      contrast: contrast,
       hue: hue,
+      contrast: contrast,
+      contrastPivot: contrastPivot,
+      lumaContribution: lumaContribution,
     );
   }
 

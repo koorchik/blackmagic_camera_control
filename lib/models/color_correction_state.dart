@@ -94,10 +94,12 @@ class ColorCorrectionState {
     this.lift = ColorWheelValues.liftGammaDefault,
     this.gamma = ColorWheelValues.liftGammaDefault,
     this.gain = ColorWheelValues.gainDefault,
+    this.offset = ColorWheelValues.liftGammaDefault,
     this.saturation = 1.0,
-    this.contrast = 1.0,
     this.hue = 0.0,
-    this.lumaMix = 1.0,
+    this.contrast = 1.0,
+    this.contrastPivot = 0.5,
+    this.lumaContribution = 1.0,
   });
 
   /// Lift (shadows) color correction - default 0.0 (additive)
@@ -109,45 +111,57 @@ class ColorCorrectionState {
   /// Gain (highlights) color correction - default 1.0 (multiplicative)
   final ColorWheelValues gain;
 
+  /// Offset (blacks) color correction - default 0.0 (additive)
+  final ColorWheelValues offset;
+
   /// Saturation adjustment (0.0 to 2.0, 1.0 = normal)
   final double saturation;
+
+  /// Hue shift (-1.0 to 1.0, 0.0 = no shift)
+  final double hue;
 
   /// Contrast adjustment (0.0 to 2.0, 1.0 = normal)
   final double contrast;
 
-  /// Hue shift in degrees (-180 to 180, 0 = no shift)
-  final double hue;
+  /// Contrast pivot point (0.0 to 1.0, 0.5 = middle gray)
+  final double contrastPivot;
 
-  /// Luma mix (0.0 to 1.0, 1.0 = full color correction)
-  final double lumaMix;
+  /// Luma contribution (0.0 to 1.0, 1.0 = full color correction)
+  final double lumaContribution;
 
   /// Check if all color correction values are at default
   bool get isDefault =>
       lift.isDefault &&
       gamma.isDefault &&
       gain.isGainDefault &&
+      offset.isDefault &&
       saturation == 1.0 &&
-      contrast == 1.0 &&
       hue == 0.0 &&
-      lumaMix == 1.0;
+      contrast == 1.0 &&
+      contrastPivot == 0.5 &&
+      lumaContribution == 1.0;
 
   ColorCorrectionState copyWith({
     ColorWheelValues? lift,
     ColorWheelValues? gamma,
     ColorWheelValues? gain,
+    ColorWheelValues? offset,
     double? saturation,
-    double? contrast,
     double? hue,
-    double? lumaMix,
+    double? contrast,
+    double? contrastPivot,
+    double? lumaContribution,
   }) {
     return ColorCorrectionState(
       lift: lift ?? this.lift,
       gamma: gamma ?? this.gamma,
       gain: gain ?? this.gain,
+      offset: offset ?? this.offset,
       saturation: saturation ?? this.saturation,
-      contrast: contrast ?? this.contrast,
       hue: hue ?? this.hue,
-      lumaMix: lumaMix ?? this.lumaMix,
+      contrast: contrast ?? this.contrast,
+      contrastPivot: contrastPivot ?? this.contrastPivot,
+      lumaContribution: lumaContribution ?? this.lumaContribution,
     );
   }
 
@@ -167,10 +181,14 @@ class ColorCorrectionState {
       gain: json['gain'] != null
           ? ColorWheelValues.fromJson(json['gain'] as Map<String, dynamic>)
           : ColorWheelValues.gainDefault,
+      offset: json['offset'] != null
+          ? ColorWheelValues.fromJson(json['offset'] as Map<String, dynamic>)
+          : ColorWheelValues.liftGammaDefault,
       saturation: (json['saturation'] as num?)?.toDouble() ?? 1.0,
-      contrast: (json['contrast'] as num?)?.toDouble() ?? 1.0,
       hue: (json['hue'] as num?)?.toDouble() ?? 0.0,
-      lumaMix: (json['lumaMix'] as num?)?.toDouble() ?? 1.0,
+      contrast: (json['contrast'] as num?)?.toDouble() ?? 1.0,
+      contrastPivot: (json['contrastPivot'] as num?)?.toDouble() ?? 0.5,
+      lumaContribution: (json['lumaContribution'] as num?)?.toDouble() ?? 1.0,
     );
   }
 
@@ -179,10 +197,12 @@ class ColorCorrectionState {
       'lift': lift.toJson(),
       'gamma': gamma.toJson(),
       'gain': gain.toJson(),
+      'offset': offset.toJson(),
       'saturation': saturation,
-      'contrast': contrast,
       'hue': hue,
-      'lumaMix': lumaMix,
+      'contrast': contrast,
+      'contrastPivot': contrastPivot,
+      'lumaContribution': lumaContribution,
     };
   }
 
@@ -193,10 +213,12 @@ class ColorCorrectionState {
         other.lift == lift &&
         other.gamma == gamma &&
         other.gain == gain &&
+        other.offset == offset &&
         other.saturation == saturation &&
-        other.contrast == contrast &&
         other.hue == hue &&
-        other.lumaMix == lumaMix;
+        other.contrast == contrast &&
+        other.contrastPivot == contrastPivot &&
+        other.lumaContribution == lumaContribution;
   }
 
   @override
@@ -204,13 +226,15 @@ class ColorCorrectionState {
         lift,
         gamma,
         gain,
+        offset,
         saturation,
-        contrast,
         hue,
-        lumaMix,
+        contrast,
+        contrastPivot,
+        lumaContribution,
       );
 
   @override
   String toString() =>
-      'ColorCorrectionState(lift: $lift, gamma: $gamma, gain: $gain)';
+      'ColorCorrectionState(lift: $lift, gamma: $gamma, gain: $gain, offset: $offset)';
 }

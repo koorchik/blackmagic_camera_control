@@ -124,11 +124,9 @@ class ApiEndpoints {
   static const String colorGamma = '/control/api/v1/colorCorrection/gamma';
   static const String colorGain = '/control/api/v1/colorCorrection/gain';
   static const String colorOffset = '/control/api/v1/colorCorrection/offset';
-  static const String colorSaturation =
-      '/control/api/v1/colorCorrection/saturation';
   static const String colorContrast =
       '/control/api/v1/colorCorrection/contrast';
-  static const String colorHue = '/control/api/v1/colorCorrection/hue';
+  // Combined hue + saturation endpoint (hue/saturation individual endpoints don't exist)
   static const String colorColor = '/control/api/v1/colorCorrection/color';
   static const String colorLumaContribution =
       '/control/api/v1/colorCorrection/lumaContribution';

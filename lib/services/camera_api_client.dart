@@ -755,37 +755,27 @@ class CameraApiClient {
     await _put(ApiEndpoints.colorGain, values.toJson());
   }
 
-  /// Get saturation
-  Future<double> getColorSaturation() async {
-    final data = await _get(ApiEndpoints.colorSaturation);
-    return (data['saturation'] as num?)?.toDouble() ?? 1.0;
+  /// Get color properties (hue and saturation) from /colorCorrection/color
+  /// Returns: {hue: double, saturation: double}
+  Future<Map<String, double>> getColorProperties() async {
+    try {
+      final data = await _get(ApiEndpoints.colorColor);
+      return {
+        'hue': (data['hue'] as num?)?.toDouble() ?? 0.0,
+        'saturation': (data['saturation'] as num?)?.toDouble() ?? 1.0,
+      };
+    } on FeatureNotSupportedException {
+      return {'hue': 0.0, 'saturation': 1.0};
+    }
   }
 
-  /// Set saturation
-  Future<void> setColorSaturation(double value) async {
-    await _put(ApiEndpoints.colorSaturation, {'saturation': value});
-  }
-
-  /// Get contrast
-  Future<double> getColorContrast() async {
-    final data = await _get(ApiEndpoints.colorContrast);
-    return (data['contrast'] as num?)?.toDouble() ?? 1.0;
-  }
-
-  /// Set contrast
-  Future<void> setColorContrast(double value) async {
-    await _put(ApiEndpoints.colorContrast, {'contrast': value});
-  }
-
-  /// Get hue
-  Future<double> getColorHue() async {
-    final data = await _get(ApiEndpoints.colorHue);
-    return (data['hue'] as num?)?.toDouble() ?? 0.0;
-  }
-
-  /// Set hue
-  Future<void> setColorHue(double value) async {
-    await _put(ApiEndpoints.colorHue, {'hue': value});
+  /// Set color properties (hue and/or saturation) via /colorCorrection/color
+  Future<void> setColorProperties({double? hue, double? saturation}) async {
+    final body = <String, dynamic>{};
+    if (hue != null) body['hue'] = hue;
+    if (saturation != null) body['saturation'] = saturation;
+    if (body.isEmpty) return;
+    await _put(ApiEndpoints.colorColor, body);
   }
 
   /// Get color offset

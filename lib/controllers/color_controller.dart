@@ -28,6 +28,8 @@ class ColorController {
     }
   }
 
+  // ========== LIFT (SHADOWS) ==========
+
   /// Set color lift (shadows) - debounced
   void setLiftDebounced(ColorWheelValues values) {
     getService()?.setColorLiftDebounced(values);
@@ -41,6 +43,8 @@ class ColorController {
     ));
     getService()?.setColorLift(values);
   }
+
+  // ========== GAMMA (MIDTONES) ==========
 
   /// Set color gamma (midtones) - debounced
   void setGammaDebounced(ColorWheelValues values) {
@@ -56,6 +60,8 @@ class ColorController {
     getService()?.setColorGamma(values);
   }
 
+  // ========== GAIN (HIGHLIGHTS) ==========
+
   /// Set color gain (highlights) - debounced
   void setGainDebounced(ColorWheelValues values) {
     getService()?.setColorGainDebounced(values);
@@ -70,38 +76,141 @@ class ColorController {
     getService()?.setColorGain(values);
   }
 
-  /// Set saturation
+  // ========== OFFSET (BLACKS) ==========
+
+  /// Set color offset (blacks) - debounced
+  void setOffsetDebounced(ColorWheelValues values) {
+    getService()?.setColorOffsetDebounced(values);
+  }
+
+  /// Set color offset (blacks) - final value
+  void setOffsetFinal(ColorWheelValues values) {
+    final state = getState();
+    updateState(state.copyWith(
+      colorCorrection: state.colorCorrection.copyWith(offset: values),
+    ));
+    getService()?.setColorOffset(values);
+  }
+
+  // ========== SATURATION ==========
+
+  /// Set saturation (uses combined /colorCorrection/color endpoint)
+  /// Always sends both hue and saturation as API expects both values together
   void setSaturation(double value) {
     final state = getState();
+    final currentHue = state.colorCorrection.hue;
     updateState(state.copyWith(
       colorCorrection: state.colorCorrection.copyWith(saturation: value),
     ));
-    getService()?.setColorSaturation(value).catchError((e) {
+    getService()?.setColorProperties(saturation: value, hue: currentHue).catchError((e) {
       setError('Failed to set saturation: $e');
     });
   }
 
-  /// Set contrast
+  /// Set saturation - debounced
+  void setSaturationDebounced(double value) {
+    final state = getState();
+    final currentHue = state.colorCorrection.hue;
+    updateState(state.copyWith(
+      colorCorrection: state.colorCorrection.copyWith(saturation: value),
+    ));
+    getService()?.setColorPropertiesDebounced(saturation: value, hue: currentHue);
+  }
+
+  // ========== HUE ==========
+
+  /// Set hue (uses combined /colorCorrection/color endpoint)
+  /// Always sends both hue and saturation as API expects both values together
+  void setHue(double value) {
+    final state = getState();
+    final currentSaturation = state.colorCorrection.saturation;
+    updateState(state.copyWith(
+      colorCorrection: state.colorCorrection.copyWith(hue: value),
+    ));
+    getService()?.setColorProperties(hue: value, saturation: currentSaturation).catchError((e) {
+      setError('Failed to set hue: $e');
+    });
+  }
+
+  /// Set hue - debounced
+  void setHueDebounced(double value) {
+    final state = getState();
+    final currentSaturation = state.colorCorrection.saturation;
+    updateState(state.copyWith(
+      colorCorrection: state.colorCorrection.copyWith(hue: value),
+    ));
+    getService()?.setColorPropertiesDebounced(hue: value, saturation: currentSaturation);
+  }
+
+  // ========== CONTRAST WITH PIVOT ==========
+
+  /// Set contrast (uses /colorCorrection/contrast with adjust field)
   void setContrast(double value) {
     final state = getState();
+    final pivot = state.colorCorrection.contrastPivot;
     updateState(state.copyWith(
       colorCorrection: state.colorCorrection.copyWith(contrast: value),
     ));
-    getService()?.setColorContrast(value).catchError((e) {
+    getService()?.setColorContrastWithPivot(value, pivot).catchError((e) {
       setError('Failed to set contrast: $e');
     });
   }
 
-  /// Set hue
-  void setHue(double value) {
+  /// Set contrast - debounced
+  void setContrastDebounced(double value) {
     final state = getState();
+    final pivot = state.colorCorrection.contrastPivot;
     updateState(state.copyWith(
-      colorCorrection: state.colorCorrection.copyWith(hue: value),
+      colorCorrection: state.colorCorrection.copyWith(contrast: value),
     ));
-    getService()?.setColorHue(value).catchError((e) {
-      setError('Failed to set hue: $e');
+    getService()?.setColorContrastWithPivotDebounced(value, pivot);
+  }
+
+  /// Set contrast pivot point
+  void setContrastPivot(double value) {
+    final state = getState();
+    final contrast = state.colorCorrection.contrast;
+    updateState(state.copyWith(
+      colorCorrection: state.colorCorrection.copyWith(contrastPivot: value),
+    ));
+    getService()?.setColorContrastWithPivot(contrast, value).catchError((e) {
+      setError('Failed to set contrast pivot: $e');
     });
   }
+
+  /// Set contrast pivot - debounced
+  void setContrastPivotDebounced(double value) {
+    final state = getState();
+    final contrast = state.colorCorrection.contrast;
+    updateState(state.copyWith(
+      colorCorrection: state.colorCorrection.copyWith(contrastPivot: value),
+    ));
+    getService()?.setColorContrastWithPivotDebounced(contrast, value);
+  }
+
+  // ========== LUMA CONTRIBUTION ==========
+
+  /// Set luma contribution
+  void setLumaContribution(double value) {
+    final state = getState();
+    updateState(state.copyWith(
+      colorCorrection: state.colorCorrection.copyWith(lumaContribution: value),
+    ));
+    getService()?.setColorLumaContribution(value).catchError((e) {
+      setError('Failed to set luma contribution: $e');
+    });
+  }
+
+  /// Set luma contribution - debounced
+  void setLumaContributionDebounced(double value) {
+    final state = getState();
+    updateState(state.copyWith(
+      colorCorrection: state.colorCorrection.copyWith(lumaContribution: value),
+    ));
+    getService()?.setColorLumaContributionDebounced(value);
+  }
+
+  // ========== RESET ==========
 
   /// Reset all color correction to default
   void reset() {
@@ -110,9 +219,20 @@ class ColorController {
       colorCorrection: state.colorCorrection.reset(),
     ));
     // Reset each component with correct defaults
-    // Lift and Gamma use 0.0 (additive), Gain uses 1.0 (multiplicative)
-    getService()?.setColorLift(ColorWheelValues.liftGammaDefault);
-    getService()?.setColorGamma(ColorWheelValues.liftGammaDefault);
-    getService()?.setColorGain(ColorWheelValues.gainDefault);
+    final service = getService();
+    if (service == null) return;
+
+    // Lift, Gamma, Offset use 0.0 (additive)
+    service.setColorLift(ColorWheelValues.liftGammaDefault);
+    service.setColorGamma(ColorWheelValues.liftGammaDefault);
+    service.setColorOffset(ColorWheelValues.liftGammaDefault);
+    // Gain uses 1.0 (multiplicative)
+    service.setColorGain(ColorWheelValues.gainDefault);
+    // Reset saturation and hue via combined endpoint
+    service.setColorProperties(saturation: 1.0, hue: 0.0);
+    // Reset contrast with pivot
+    service.setColorContrastWithPivot(1.0, 0.5);
+    // Reset luma contribution
+    service.setColorLumaContribution(1.0);
   }
 }
