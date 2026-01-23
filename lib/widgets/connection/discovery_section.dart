@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/discovered_camera.dart';
 import '../../providers/camera_connection_provider.dart';
+import '../../utils/platform_capabilities.dart';
 import 'discovered_camera_tile.dart';
 
 /// Widget that encapsulates the camera discovery UI
@@ -10,6 +11,11 @@ class DiscoverySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Camera discovery is not available on web platforms
+    if (PlatformCapabilities.isWeb) {
+      return _buildWebNotice(context);
+    }
+
     final connection = context.watch<CameraConnectionProvider>();
     final isDiscovering = connection.isDiscovering;
     final isConnecting = connection.status == ConnectionStatus.connecting;
@@ -155,5 +161,33 @@ class DiscoverySection extends StatelessWidget {
 
   void _connectToCamera(BuildContext context, DiscoveredCamera camera) {
     context.read<CameraConnectionProvider>().connectToDiscoveredCamera(camera);
+  }
+
+  Widget _buildWebNotice(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Camera discovery is not available on web. '
+              'Please enter the camera IP address directly below.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

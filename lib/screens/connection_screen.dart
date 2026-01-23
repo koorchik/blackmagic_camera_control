@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/camera_connection_provider.dart';
+import '../utils/platform_capabilities.dart';
 import '../widgets/connection/discovery_section.dart';
 
 class ConnectionScreen extends StatefulWidget {
@@ -72,7 +73,9 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Discover cameras on your network or enter IP manually',
+                      PlatformCapabilities.isWeb
+                          ? 'Enter your camera IP address to connect'
+                          : 'Discover cameras on your network or enter IP manually',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
@@ -99,11 +102,14 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _ipController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Camera IP Address',
                         hintText: '192.168.1.100',
-                        prefixIcon: Icon(Icons.lan),
-                        border: OutlineInputBorder(),
+                        helperText: PlatformCapabilities.isWeb
+                            ? 'Hostnames are not supported on web'
+                            : null,
+                        prefixIcon: const Icon(Icons.lan),
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.url,
                       textInputAction: TextInputAction.done,

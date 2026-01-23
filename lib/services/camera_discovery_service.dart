@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/discovered_camera.dart';
 import '../utils/constants.dart';
+import '../utils/platform_capabilities.dart';
 import 'mdns_resolver.dart';
 
 /// Service for discovering Blackmagic cameras on the network.
@@ -25,6 +26,12 @@ class CameraDiscoveryService {
   Future<List<DiscoveredCamera>> discoverCameras({
     Duration timeout = DiscoveryConstants.discoveryTimeout,
   }) async {
+    // mDNS discovery is not available on web platforms
+    if (!PlatformCapabilities.canDiscoverCameras) {
+      debugPrint('[Discovery] Not available on web platform');
+      return [];
+    }
+
     if (_isDiscovering) {
       return [];
     }
