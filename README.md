@@ -37,19 +37,44 @@ Any Blackmagic camera with REST API support, including:
 
 > **Note:** Your camera must have the REST API enabled. Check your camera's network settings.
 
-## Getting Started
+## Installation
 
-### Prerequisites
+### Web App (No Installation Required)
+
+Try it instantly in your browser:
+
+**[Launch Web App](https://koorchik.github.io/blackmagic_camera_control/)**
+
+### Desktop & Mobile Downloads
+
+Download pre-built binaries from the [Releases](https://github.com/koorchik/blackmagic_camera_control/releases) page:
+
+| Platform | Download |
+|----------|----------|
+| Linux    | `blackmagic_camera_control-linux-x64-vX.X.X.tar.gz` |
+| Windows  | `blackmagic_camera_control-windows-x64-vX.X.X.zip` |
+| macOS    | `blackmagic_camera_control-macos-vX.X.X.zip` |
+| Android  | `blackmagic_camera_control-android-vX.X.X.apk` |
+
+#### Platform Notes
+
+- **Linux**: Extract and run `./blackmagic_camera_control`
+- **Windows**: Extract and run `blackmagic_camera_control.exe`
+- **macOS**: Extract, right-click the app and select "Open" (required for unsigned apps)
+- **Android**: Enable "Install from unknown sources" to install the APK
+
+### Building from Source
+
+#### Prerequisites
 
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) (3.10.7 or later)
-- A Blackmagic camera connected to the same network as your device
 
-### Installation
+#### Steps
 
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/yourusername/blackmagic_camera_control.git
+   git clone https://github.com/koorchik/blackmagic_camera_control.git
    cd blackmagic_camera_control
    ```
 
