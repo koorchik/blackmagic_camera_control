@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import '../../providers/camera_state_provider.dart';
 import '../../utils/constants.dart';
 import '../common/collapsible_control_card.dart';
+import '../common/debounced_slider.dart';
 
+/// Safe area control using DebouncedSlider for smooth web performance.
 class SafeAreaControl extends StatelessWidget {
   const SafeAreaControl({super.key});
 
@@ -43,15 +45,14 @@ class SafeAreaControl extends StatelessWidget {
             ],
           ),
           Spacing.verticalSm,
-          Slider(
+          DebouncedSlider(
             value: safeAreaPercent.toDouble(),
             min: 50,
             max: 100,
             divisions: 10,
-            label: '$safeAreaPercent%',
-            onChanged: (value) {
-              cameraState.setSafeAreaPercent(value.round());
-            },
+            formatLabel: (v) => '${v.round()}%',
+            onChanged: (value) => cameraState.setSafeAreaPercentDebounced(value.round()),
+            onChangeEnd: (value) => cameraState.setSafeAreaPercentFinal(value.round()),
           ),
         ],
       ),

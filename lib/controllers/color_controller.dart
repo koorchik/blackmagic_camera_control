@@ -97,13 +97,9 @@ class ColorController extends BaseController {
     });
   }
 
-  /// Set saturation - debounced
+  /// Set saturation - debounced (API only, no state update for smooth dragging)
   void setSaturationDebounced(double value) {
-    final state = getState();
-    final currentHue = state.colorCorrection.hue;
-    updateState(state.copyWith(
-      colorCorrection: state.colorCorrection.copyWith(saturation: value),
-    ));
+    final currentHue = getState().colorCorrection.hue;
     getService()?.setColorPropertiesDebounced(saturation: value, hue: currentHue);
   }
 
@@ -122,13 +118,9 @@ class ColorController extends BaseController {
     });
   }
 
-  /// Set hue - debounced
+  /// Set hue - debounced (API only, no state update for smooth dragging)
   void setHueDebounced(double value) {
-    final state = getState();
-    final currentSaturation = state.colorCorrection.saturation;
-    updateState(state.copyWith(
-      colorCorrection: state.colorCorrection.copyWith(hue: value),
-    ));
+    final currentSaturation = getState().colorCorrection.saturation;
     getService()?.setColorPropertiesDebounced(hue: value, saturation: currentSaturation);
   }
 
@@ -146,13 +138,9 @@ class ColorController extends BaseController {
     });
   }
 
-  /// Set contrast - debounced
+  /// Set contrast - debounced (API only, no state update for smooth dragging)
   void setContrastDebounced(double value) {
-    final state = getState();
-    final pivot = state.colorCorrection.contrastPivot;
-    updateState(state.copyWith(
-      colorCorrection: state.colorCorrection.copyWith(contrast: value),
-    ));
+    final pivot = getState().colorCorrection.contrastPivot;
     getService()?.setColorContrastWithPivotDebounced(value, pivot);
   }
 
@@ -168,13 +156,9 @@ class ColorController extends BaseController {
     });
   }
 
-  /// Set contrast pivot - debounced
+  /// Set contrast pivot - debounced (API only, no state update for smooth dragging)
   void setContrastPivotDebounced(double value) {
-    final state = getState();
-    final contrast = state.colorCorrection.contrast;
-    updateState(state.copyWith(
-      colorCorrection: state.colorCorrection.copyWith(contrastPivot: value),
-    ));
+    final contrast = getState().colorCorrection.contrast;
     getService()?.setColorContrastWithPivotDebounced(contrast, value);
   }
 
@@ -191,12 +175,8 @@ class ColorController extends BaseController {
     });
   }
 
-  /// Set luma contribution - debounced
+  /// Set luma contribution - debounced (API only, no state update for smooth dragging)
   void setLumaContributionDebounced(double value) {
-    final state = getState();
-    updateState(state.copyWith(
-      colorCorrection: state.colorCorrection.copyWith(lumaContribution: value),
-    ));
     getService()?.setColorLumaContributionDebounced(value);
   }
 

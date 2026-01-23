@@ -259,8 +259,25 @@ class MonitoringController extends BaseController {
     );
   }
 
-  /// Set safe area percentage (camera-wide)
+  /// Set safe area percentage (camera-wide) - used for direct changes
   void setSafeAreaPercent(int percent) {
+    final state = getState();
+    updateState(state.copyWith(
+      monitoring: state.monitoring.copyWith(safeAreaPercent: percent),
+    ));
+
+    getService()?.setSafeAreaPercent(percent).catchError((e) {
+      setError('Failed to set safe area percent: $e');
+    });
+  }
+
+  /// Set safe area percent with debouncing (API only, no state update) - used during slider drag
+  void setSafeAreaPercentDebounced(int percent) {
+    getService()?.setSafeAreaPercentDebounced(percent);
+  }
+
+  /// Set safe area percent final value (state update + immediate API) - used at slider drag end
+  void setSafeAreaPercentFinal(int percent) {
     final state = getState();
     updateState(state.copyWith(
       monitoring: state.monitoring.copyWith(safeAreaPercent: percent),

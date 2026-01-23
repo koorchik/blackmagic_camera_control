@@ -86,7 +86,12 @@ Controllers: `LensController`, `VideoController`, `TransportController`, `SlateC
 
 ## Key Patterns
 
-- **Slider debouncing**: Controllers have paired methods - `setFocusDebounced()` for smooth dragging (API only, 50ms debounce), `setFocusFinal()` for drag end (updates state + immediate API call)
+- **Slider pattern** (CRITICAL for web performance): ALL sliders use local widget state during drag:
+  - Widgets: `_draggingValue` local state, updates via `setState()` during drag
+  - `onChanged` → optional debounced API call only (no provider state update)
+  - `onChangeEnd` → provider state update + final API call
+  - Controllers: paired methods `setXxxDebounced()` + `setXxxFinal()`
+  - Both `ContinuousSliderControl` and `DiscreteSliderControl` follow this pattern
 - **Color correction debouncing**: 100ms for stability
 - **WebSocket state merging**: Partial updates merged with existing state in provider
 - **404 handling**: Indicates unsupported camera features, handled gracefully
@@ -109,6 +114,7 @@ Use widgets from `lib/widgets/common/` to maintain consistency:
 |-----------|----------|
 | `ControlCard` | Card wrapper with standard padding |
 | `ToggleControlRow` | Icon + title + description + Switch |
+| `DebouncedSlider` | Core slider with local drag state (use for raw sliders) |
 | `DiscreteSliderControl<T>` | Slider with discrete values (ISO, shutter) |
 | `ContinuousSliderControl` | Slider with debounce-aware state (focus, iris, zoom) |
 | `CollapsibleControlCard` | Card with toggle that shows/hides content |
@@ -122,7 +128,7 @@ Use widgets from `lib/widgets/common/` to maintain consistency:
 2. **Use `Spacing` constants** instead of `SizedBox(height: 16)` - use `Spacing.verticalLg`
 3. **Use `Breakpoints.medium`** instead of hardcoded `800` for responsive layouts
 4. **ChoiceChip**: Use `ChipSelectionGroup` - it handles `showCheckmark: false` automatically
-5. **Slider debouncing**: Use `ContinuousSliderControl` - it handles `_draggingValue` state internally
+5. **All sliders**: Must use `onChangeEnd` for provider state updates. Use `onChanged` only for debounced API calls. Never update provider state in `onChanged` - causes lag on web.
 
 ### Constants (`lib/utils/constants.dart`)
 
@@ -150,6 +156,46 @@ final _debouncer = Debouncer(Duration(milliseconds: 100));
 _debouncer.call(() => performAction());
 _debouncer.dispose(); // Clean up when done
 ```
+
+### Slider Pattern (Web Performance)
+
+All sliders follow the same pattern to avoid UI lag. Use `DebouncedSlider` as the building block:
+
+**Widget layer** - Use `DebouncedSlider` instead of raw `Slider`:
+```dart
+// Simple - DebouncedSlider handles local state internally
+DebouncedSlider(
+  value: providerValue,
+  min: 0,
+  max: 100,
+  onChanged: (v) => provider.setFooDebounced(v),  // API only
+  onChangeEnd: (v) => provider.setFooFinal(v),     // State + API
+)
+```
+
+**Controller layer** - Paired methods:
+```dart
+void setFooDebounced(double value) {
+  getService()?.setFooDebounced(value);  // API only, NO state update
+}
+
+void setFooFinal(double value) {
+  updateState(state.copyWith(foo: value));  // State update
+  getService()?.setFoo(value);              // Immediate API
+}
+```
+
+**Service layer** - Debounced calls:
+```dart
+void setFooDebounced(double value) {
+  _sliderDebouncer.call(() => setFoo(value));
+}
+```
+
+**Slider components hierarchy:**
+- `DebouncedSlider` - Core building block, handles local drag state
+- `ContinuousSliderControl` - Uses DebouncedSlider + title header + card (for lens controls)
+- `DiscreteSliderControl<T>` - Handles discrete values + sparse labels (for ISO, shutter)
 
 ## Camera REST API Docs
 

@@ -4,6 +4,7 @@ import '../models/color_correction_state.dart';
 import '../providers/camera_state_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/color/color_wheel_card.dart' show ColorWheelCard, ColorWheelType;
+import '../widgets/common/debounced_slider.dart';
 
 class ColorScreen extends StatefulWidget {
   const ColorScreen({super.key});
@@ -335,9 +336,8 @@ class _ColorScreenState extends State<ColorScreen> {
   }
 }
 
-/// Custom slider widget that manages its own state during interaction
-/// to prevent external state updates from interfering with dragging.
-class _ColorSlider extends StatefulWidget {
+/// Color slider using DebouncedSlider with reset button and formatted display.
+class _ColorSlider extends StatelessWidget {
   const _ColorSlider({
     required this.label,
     required this.value,
@@ -359,51 +359,9 @@ class _ColorSlider extends StatefulWidget {
   final String Function(double)? formatValue;
 
   @override
-  State<_ColorSlider> createState() => _ColorSliderState();
-}
-
-class _ColorSliderState extends State<_ColorSlider> {
-  double? _draggingValue;
-  bool _isDragging = false;
-
-  double get _displayValue => _draggingValue ?? widget.value;
-
-  @override
-  void didUpdateWidget(_ColorSlider oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Only sync external value when not dragging
-    if (!_isDragging && oldWidget.value != widget.value) {
-      _draggingValue = null;
-    }
-  }
-
-  void _handleChangeStart(double value) {
-    setState(() {
-      _isDragging = true;
-      _draggingValue = value;
-    });
-  }
-
-  void _handleChange(double value) {
-    setState(() {
-      _draggingValue = value;
-    });
-    widget.onChanged(value);
-  }
-
-  void _handleChangeEnd(double value) {
-    widget.onChangeEnd(value);
-    setState(() {
-      _isDragging = false;
-      _draggingValue = null;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final displayValue = widget.formatValue?.call(_displayValue) ??
-        _displayValue.toStringAsFixed(2);
-    final isDefault = (_displayValue - widget.defaultValue).abs() < 0.001;
+    final displayValue = formatValue?.call(value) ?? value.toStringAsFixed(2);
+    final isDefault = (value - defaultValue).abs() < 0.001;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,7 +370,7 @@ class _ColorSliderState extends State<_ColorSlider> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              widget.label,
+              label,
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
             Row(
@@ -431,7 +389,7 @@ class _ColorSliderState extends State<_ColorSlider> {
                     icon: const Icon(Icons.refresh, size: 16),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    onPressed: () => widget.onChangeEnd(widget.defaultValue),
+                    onPressed: () => onChangeEnd(defaultValue),
                     tooltip: 'Reset to default',
                   ),
               ],
@@ -443,13 +401,12 @@ class _ColorSliderState extends State<_ColorSlider> {
             trackHeight: 4,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
           ),
-          child: Slider(
-            value: _displayValue.clamp(widget.min, widget.max),
-            min: widget.min,
-            max: widget.max,
-            onChangeStart: _handleChangeStart,
-            onChanged: _handleChange,
-            onChangeEnd: _handleChangeEnd,
+          child: DebouncedSlider(
+            value: value,
+            min: min,
+            max: max,
+            onChanged: onChanged,
+            onChangeEnd: onChangeEnd,
           ),
         ),
       ],

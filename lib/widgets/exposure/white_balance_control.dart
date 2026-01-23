@@ -5,7 +5,9 @@ import '../../providers/camera_state_provider.dart';
 import '../../utils/constants.dart';
 import '../common/control_card.dart';
 import '../common/chip_selection_group.dart';
+import '../common/debounced_slider.dart';
 
+/// White balance control using DebouncedSlider for smooth web performance.
 class WhiteBalanceControl extends StatelessWidget {
   const WhiteBalanceControl({super.key});
 
@@ -25,44 +27,19 @@ class WhiteBalanceControl extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                'WHITE BALANCE',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const Spacer(),
-              FilledButton.tonal(
-                onPressed: () {
-                  cameraState.triggerAutoWhiteBalance();
-                },
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(48, 32),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                ),
-                child: const Text('AWB'),
-              ),
-              Spacing.horizontalMd,
-              Text(
-                '${whiteBalance}K',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-              ),
-            ],
+          _WhiteBalanceHeader(
+            whiteBalance: whiteBalance,
+            onAutoWhiteBalance: cameraState.triggerAutoWhiteBalance,
           ),
           Spacing.verticalMd,
-          Slider(
+          DebouncedSlider(
             value: whiteBalance.toDouble(),
             min: 2500,
             max: 10000,
             divisions: 30,
-            label: '${whiteBalance}K',
-            onChanged: (value) {
-              cameraState.setWhiteBalance(value.round());
-            },
+            formatLabel: (v) => '${v.round()}K',
+            onChanged: (value) => cameraState.setWhiteBalanceDebounced(value.round()),
+            onChangeEnd: (value) => cameraState.setWhiteBalanceFinal(value.round()),
           ),
           Spacing.verticalSm,
           ChipSelectionGroup<String>(
@@ -71,13 +48,54 @@ class WhiteBalanceControl extends StatelessWidget {
             onSelected: (presetName) {
               final value = VideoState.whiteBalancePresets[presetName];
               if (value != null) {
-                cameraState.setWhiteBalance(value);
+                cameraState.setWhiteBalanceFinal(value);
               }
             },
             labelBuilder: (presetName) => presetName,
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Extracted header to avoid rebuilding during slider drag.
+class _WhiteBalanceHeader extends StatelessWidget {
+  const _WhiteBalanceHeader({
+    required this.whiteBalance,
+    required this.onAutoWhiteBalance,
+  });
+
+  final int whiteBalance;
+  final VoidCallback onAutoWhiteBalance;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          'WHITE BALANCE',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const Spacer(),
+        FilledButton.tonal(
+          onPressed: onAutoWhiteBalance,
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(48, 32),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+          ),
+          child: const Text('AWB'),
+        ),
+        Spacing.horizontalMd,
+        Text(
+          '${whiteBalance}K',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+        ),
+      ],
     );
   }
 }

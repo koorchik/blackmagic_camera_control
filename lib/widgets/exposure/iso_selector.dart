@@ -16,7 +16,8 @@ class IsoSelector extends StatelessWidget {
       title: 'ISO',
       currentValue: currentIso,
       values: supportedISOs,
-      onChanged: (iso) => cameraState.setIso(iso),
+      onChanged: (iso) => cameraState.setIsoDebounced(iso),
+      onChangeEnd: (iso) => cameraState.setIsoFinal(iso),
       formatValue: (iso) => '$iso',
       formatLabel: (iso) => '$iso',
     );

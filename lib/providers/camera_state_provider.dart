@@ -261,14 +261,26 @@ class CameraStateProvider extends ChangeNotifier {
   void setZoomFinal(double value) => _lensController.setZoomFinal(value);
 
   // ========== VIDEO CONTROLS (delegated) ==========
+  // ISO (debounced/final for slider drag pattern)
   void setIso(int value) => _videoController.setIso(
         value,
         onComplete: () => _videoController.refreshShutterIfAuto(),
       );
+  void setIsoDebounced(int value) => _videoController.setIsoDebounced(value);
+  void setIsoFinal(int value) => _videoController.setIsoFinal(
+        value,
+        onComplete: () => _videoController.refreshShutterIfAuto(),
+      );
+  // Shutter (debounced/final for slider drag pattern)
   void setShutterSpeed(int value) => _videoController.setShutterSpeed(value);
+  void setShutterSpeedDebounced(int value) => _videoController.setShutterSpeedDebounced(value);
+  void setShutterSpeedFinal(int value) => _videoController.setShutterSpeedFinal(value);
   void setShutterAutoExposure(bool enabled) => _videoController.setShutterAutoExposure(enabled);
   void toggleShutterAuto() => _videoController.toggleShutterAuto();
+  // White balance (debounced/final for slider drag pattern)
   void setWhiteBalance(int kelvin) => _videoController.setWhiteBalance(kelvin);
+  void setWhiteBalanceDebounced(int kelvin) => _videoController.setWhiteBalanceDebounced(kelvin);
+  void setWhiteBalanceFinal(int kelvin) => _videoController.setWhiteBalanceFinal(kelvin);
   void setWhiteBalanceTint(int tint) => _videoController.setWhiteBalanceTint(tint);
   Future<void> triggerAutoWhiteBalance() => _videoController.triggerAutoWhiteBalance();
 
@@ -324,7 +336,10 @@ class CameraStateProvider extends ChangeNotifier {
   void setColorBarsEnabled(bool enabled) => _monitoringController.setColorBarsEnabled(enabled);
   void setFalseColorEnabled(bool enabled) => _monitoringController.setFalseColorEnabled(enabled);
   void setSafeAreaEnabled(bool enabled) => _monitoringController.setSafeAreaEnabled(enabled);
+  // Safe area percent (debounced/final for slider drag pattern)
   void setSafeAreaPercent(int percent) => _monitoringController.setSafeAreaPercent(percent);
+  void setSafeAreaPercentDebounced(int percent) => _monitoringController.setSafeAreaPercentDebounced(percent);
+  void setSafeAreaPercentFinal(int percent) => _monitoringController.setSafeAreaPercentFinal(percent);
   void setFrameGridsEnabled(bool enabled) => _monitoringController.setFrameGridsEnabled(enabled);
   void setActiveFrameGrids(List<FrameGridType> grids) => _monitoringController.setActiveFrameGrids(grids);
 

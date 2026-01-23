@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'control_card.dart';
+import 'debounced_slider.dart';
 import '../../utils/constants.dart';
 
 /// A reusable continuous slider control with built-in dragging state management.
-/// Handles the _draggingValue pattern internally for smooth UI during drag operations.
+/// Uses DebouncedSlider internally for smooth UI during drag operations.
 ///
 /// Used for Focus, Iris, Zoom, and similar continuous value controls where
 /// debounced updates are sent during drag and a final value on drag end.
-class ContinuousSliderControl extends StatefulWidget {
+class ContinuousSliderControl extends StatelessWidget {
   const ContinuousSliderControl({
     super.key,
     required this.title,
@@ -73,16 +74,6 @@ class ContinuousSliderControl extends StatefulWidget {
   final String? trailingLabel;
 
   @override
-  State<ContinuousSliderControl> createState() =>
-      _ContinuousSliderControlState();
-}
-
-class _ContinuousSliderControlState extends State<ContinuousSliderControl> {
-  double? _draggingValue;
-
-  double get _displayValue => _draggingValue ?? widget.value;
-
-  @override
   Widget build(BuildContext context) {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,12 +81,11 @@ class _ContinuousSliderControlState extends State<ContinuousSliderControl> {
         _buildHeader(context),
         Spacing.verticalSm,
         _buildSliderRow(context),
-        if (widget.labels != null && widget.labels!.isNotEmpty)
-          _buildLabels(context),
+        if (labels != null && labels!.isNotEmpty) _buildLabels(context),
       ],
     );
 
-    if (widget.showCard) {
+    if (showCard) {
       return ControlCard(child: content);
     }
 
@@ -107,15 +97,15 @@ class _ContinuousSliderControlState extends State<ContinuousSliderControl> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          widget.title,
+          title,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
         ),
         Text(
-          widget.formatValue(_displayValue),
+          formatValue(value),
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: widget.enabled
+                color: enabled
                     ? Theme.of(context).colorScheme.primary
                     : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -127,36 +117,25 @@ class _ContinuousSliderControlState extends State<ContinuousSliderControl> {
   Widget _buildSliderRow(BuildContext context) {
     final slider = SliderTheme(
       data: SliderTheme.of(context).copyWith(
-        showValueIndicator: widget.divisions != null
+        showValueIndicator: divisions != null
             ? ShowValueIndicator.onlyForDiscrete
             : ShowValueIndicator.onlyForContinuous,
       ),
-      child: Slider(
-        value: _displayValue.clamp(widget.min, widget.max),
-        min: widget.min,
-        max: widget.max,
-        divisions: widget.divisions,
-        label: widget.formatValue(_displayValue),
-        onChanged: widget.enabled
-            ? (value) {
-                setState(() => _draggingValue = value);
-                widget.onChanged(value);
-              }
-            : null,
-        onChangeEnd: widget.enabled
-            ? (value) {
-                setState(() => _draggingValue = null);
-                widget.onChangeEnd(value);
-              }
-            : null,
+      child: DebouncedSlider(
+        value: value,
+        min: min,
+        max: max,
+        divisions: divisions,
+        formatLabel: formatValue,
+        enabled: enabled,
+        onChanged: onChanged,
+        onChangeEnd: onChangeEnd,
       ),
     );
 
     // Check if we have icons or labels for the row
-    final hasLeading =
-        widget.leadingIcon != null || widget.leadingLabel != null;
-    final hasTrailing =
-        widget.trailingIcon != null || widget.trailingLabel != null;
+    final hasLeading = leadingIcon != null || leadingLabel != null;
+    final hasTrailing = trailingIcon != null || trailingLabel != null;
 
     if (!hasLeading && !hasTrailing) {
       return slider;
@@ -164,15 +143,15 @@ class _ContinuousSliderControlState extends State<ContinuousSliderControl> {
 
     return Row(
       children: [
-        if (widget.leadingIcon != null)
-          Icon(widget.leadingIcon, size: 20)
-        else if (widget.leadingLabel != null)
-          Text(widget.leadingLabel!),
+        if (leadingIcon != null)
+          Icon(leadingIcon, size: 20)
+        else if (leadingLabel != null)
+          Text(leadingLabel!),
         Expanded(child: slider),
-        if (widget.trailingIcon != null)
-          Icon(widget.trailingIcon, size: 20)
-        else if (widget.trailingLabel != null)
-          Text(widget.trailingLabel!),
+        if (trailingIcon != null)
+          Icon(trailingIcon, size: 20)
+        else if (trailingLabel != null)
+          Text(trailingLabel!),
       ],
     );
   }
@@ -182,7 +161,7 @@ class _ContinuousSliderControlState extends State<ContinuousSliderControl> {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: widget.labels!.map((label) {
+        children: labels!.map((label) {
           return Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(

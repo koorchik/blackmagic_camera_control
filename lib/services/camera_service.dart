@@ -132,8 +132,18 @@ class CameraService {
   /// Set ISO
   Future<void> setIso(int value) => _apiClient.setIso(value);
 
+  /// Set ISO with debouncing
+  void setIsoDebounced(int value) {
+    _debounce(() => _apiClient.setIso(value));
+  }
+
   /// Set shutter speed
   Future<void> setShutterSpeed(int value) => _apiClient.setShutterSpeed(value);
+
+  /// Set shutter speed with debouncing
+  void setShutterSpeedDebounced(int value) {
+    _debounce(() => _apiClient.setShutterSpeed(value));
+  }
 
   /// Set auto exposure mode ("Off", "Continuous", "OneShot") for a specific type
   Future<void> setAutoExposureMode(String mode, {String type = 'Shutter'}) =>
@@ -141,6 +151,11 @@ class CameraService {
 
   /// Set white balance
   Future<void> setWhiteBalance(int kelvin) => _apiClient.setWhiteBalance(kelvin);
+
+  /// Set white balance with debouncing
+  void setWhiteBalanceDebounced(int kelvin) {
+    _debounce(() => _apiClient.setWhiteBalance(kelvin));
+  }
 
   /// Set white balance tint
   Future<void> setWhiteBalanceTint(int tint) => _apiClient.setWhiteBalanceTint(tint);
@@ -387,6 +402,11 @@ class CameraService {
   /// Set safe area percentage (camera-wide)
   Future<void> setSafeAreaPercent(int percent) =>
       _apiClient.setSafeAreaPercent(percent);
+
+  /// Set safe area percentage with debouncing
+  void setSafeAreaPercentDebounced(int percent) {
+    _debounce(() => _apiClient.setSafeAreaPercent(percent));
+  }
 
   /// Set frame grids enabled for a display
   Future<void> setFrameGridsEnabled(String displayName, bool enabled) =>

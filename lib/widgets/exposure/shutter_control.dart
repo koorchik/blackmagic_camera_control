@@ -18,7 +18,8 @@ class ShutterControl extends StatelessWidget {
       currentValue: video.shutterSpeed,
       values: supportedShutterSpeeds,
       enabled: !isAuto,
-      onChanged: (speed) => cameraState.setShutterSpeed(speed),
+      onChanged: (speed) => cameraState.setShutterSpeedDebounced(speed),
+      onChangeEnd: (speed) => cameraState.setShutterSpeedFinal(speed),
       formatValue: (speed) => '1/$speed',
       formatLabel: (speed) => '1/$speed',
       trailing: FilterChip(
